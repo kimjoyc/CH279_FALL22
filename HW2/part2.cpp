@@ -254,7 +254,7 @@ int main()
    S_AB s1s2_x(L_A_s1_x,L_B_s2_x,R_A_s1_x,R_B_s2_x,alpha_s1_x,beta_s2_x);
 
    //x tot
-   cout << "s1s2 tot x  " << s1s2_x.double_summation();
+   cout << "s1s2  x  " << s1s2_x.double_summation();
    cout << "\n\n";
    
    //y
@@ -267,11 +267,11 @@ int main()
    S_AB s1s2_y(L_A_s1_y,L_B_s2_y,R_A_s1_y,R_B_s2_y,alpha_s1_y,beta_s2_y);
 
    //y tot
-   cout << "s1s2 tot y  " << s1s2_y.double_summation();
+   cout << "s1s2 y  " << s1s2_y.double_summation();
    cout << "\n\n";
    
    
-   //y
+   //z
    float L_A_s1_z=0;
    float L_B_s2_z=0;
    float R_A_s1_z=0;
@@ -280,8 +280,8 @@ int main()
    float beta_s2_z=1;
    S_AB s1s2_z(L_A_s1_z,L_B_s2_z,R_A_s1_z,R_B_s2_z,alpha_s1_z,beta_s2_z);
 
-   //y tot
-   cout << "s1s2 tot z  " << s1s2_z.double_summation();
+   //z tot
+   cout << "s1s2 z  " << s1s2_z.double_summation();
    cout << "\n\n";
 
    //xyz tot
@@ -357,7 +357,7 @@ int main()
 //    float L_Bs_z=0;
    float R_Ap2y_z=2;
 //    float R_Bs_z=0;
-   float alpha_p2y_z=1;
+   float alpha_p2y_z=2;
 //    float beta_s_z=1;
    S_AB s1p2y_z(L_Ap2y_z,L_Bs_z,R_Ap2y_z,R_Bs_z,alpha_p2y_z,beta_s_z);
    cout << "z "<< s1p2y_z.double_summation();
