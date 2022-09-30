@@ -7,19 +7,19 @@ using namespace std;
 // A sample function whose definite integral's
 // approximate value is computed using Trapezoidal
 // rule
-double y(int x)
+float y(float x)
 {
     // int alpha_=-1;
     // int X_a=1;
     // int X_b=2;
     // int beta_=1;
 
-    return exp(-pow(x-1,2)+pow(x-2,2));
+    return exp(-pow(x,2)-pow(x,2));
 }
 
 
 // Function to evaluate the value of integral
-double trapezoidal(double a, double b, double n)
+float trapezoidal(double a, double b, double n)
 {
     // Grid spacing
     double h = (b-a)/n;
@@ -42,7 +42,7 @@ int main()
 {
     // Range of definite integral
     double x0 = 0;
-    double xn = 10;
+    double xn = 1;
  
     // Number of grids. Higher value means
     // more accuracy
