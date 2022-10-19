@@ -97,17 +97,80 @@ arma::mat diff_calc(arma::mat h2, arma::mat h_tot){
 int main() {
     //H2 test case 
     arma::mat H2 = {{1.1522,0.6223},{0.6223,1.1522}};
+    cout << "\n\n";
+    cout << "The unnormaizlied matrix for H2";
+    cout << "\n\n";
+    cout << H2;
+    cout << "\n\n";
+     
     arma::mat S_12= orth_trans(H2);
+    cout << "The S^-1/2 matrix ";
+    cout << "\n\n";
+    cout << S_12; 
+    cout << "\n\n";
+
     arma::mat diag_h = {{-13.6,0}, {0,-13.6}};
+    cout << "\n\n";
+    cout << "The H matrix with assoc ionization potential";
+    cout << "\n\n";
+    cout << diag_h; 
+    cout << "\n\n";
+
     arma::mat hmat_get = h_mat_get(diag_h,H2);
-    arma::mat H_mat = {{-13.6,-15},{-15,-13.6}};
+    cout << "\n\n";
+    cout << "The H matrix with the offdiagonal calculated";
+    cout << "\n\n";
+    cout<< hmat_get; 
+    cout << "\n\n";
+
+    arma::mat H_mat = {{-13.6,-14.81},{-14.81,-13.6}};
+    cout << "\n\n";
+    cout << "The actual H matrix with paramateres manually input in";
+    cout << "\n\n";
+    cout << H_mat; 
+    cout << "\n\n";
+
     arma::mat curly_H=ham_ortho(H_mat,S_12);
+    cout << "\n\n";
+    cout << "The H prime matrix to input in the next step (diag/orthogonalization) ";
+    cout << "\n\n";
+    cout<< curly_H; 
+    cout << "\n\n";
+
     arma::mat vprim=h_diag(curly_H,S_12);
+    cout << "\n\n";
+    cout << "The eigenvalue/eigenvector solver where the eigenvector solved is aka C_mat";
+    cout << "\n\n";
+    cout <<vprim; 
+    cout << "\n\n";
+
     arma::mat c = get_v(H2);
+    cout << "\n\n";
+    cout << "The MO Overlap orbital is just the overlap orbital transposed basically (S^-1/2 * S^1/2) ";
+    cout << "\n\n"; 
+    cout << c;
+    cout << "\n\n";
+
     arma::mat tot_eng = total_energy(curly_H,S_12);
+    cout << "\n\n";
+    cout << "The epsilon eigenvalues summed up to give total energy of H2 ";
+    cout << "\n\n";
+    cout << tot_eng; 
+    cout << "\n\n";
+    
     arma::mat tot_eng_sep = total_energy_sep(curly_H,S_12);
+    cout << "\n\n";
+    cout << "The epsilon eigenvalues not summed to give antibonding MO energy and bonding MO energy ";
+    cout << "\n\n";
+    cout << tot_eng_sep; 
+    cout << "\n\n";
+    
     arma::mat diff = diff_calc(tot_eng_sep,tot_eng);
-    cout << diff;
+    cout << "\n\n";
+    cout << "The epsilon eigenvalue for the ground state H2 MO bonding subtracted by the total energy  ";
+    cout << "\n\n";
+    cout << diff; 
+    cout << "\n\n";
 
 }
 

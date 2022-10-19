@@ -9,4 +9,7 @@ g++ part1.cpp -o part1 util.cpp -O2 -larmadillo -llapack -lblas
 ./part1 H2_H2_1 H2_H2_2 H2_H2_3
 
 
+g++ part2.cpp -o part2 util.cpp -O2 -larmadillo -llapack -lblas
+./part2 
+
 
