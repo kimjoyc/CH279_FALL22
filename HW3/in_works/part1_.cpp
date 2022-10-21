@@ -59,8 +59,7 @@ void ReadShellparameter(Shell& sh1, Shell& sh2, Shell& sh3, string &fname)
 {
   ifstream in(fname, ios::in);
   string line1, line2,line3;
-  double x0, y0, z0, alpha;
-  float d;
+  double x0, y0, z0, alpha, d;
   int elem_num;
   int l;
   getline(in, line1);
@@ -72,6 +71,7 @@ void ReadShellparameter(Shell& sh1, Shell& sh2, Shell& sh3, string &fname)
   {
     throw invalid_argument("There is some problem with format.");
   }
+  sh1.Reset(elem_num,x0, y0, z0, alpha,d, l);
   istringstream iss2(line2);
   if (!(iss2 >> elem_num >> x0 >> y0 >> z0 >> alpha >> d >> l ))
   {
@@ -201,6 +201,7 @@ void sum_func(arma::mat & ov_tot, Shell &sh1,Shell &sh2, Shell &sh3, Shell &sh4,
   arma::mat Overlap_matrix_1_6(sh1.dim_func(), sh6.dim_func(),arma::fill::zeros);
   Eval_Ov(Overlap_matrix_1_6,sh1,sh6);
 
+
   ov_tot+=sh1.get_d()*sh4.get_d()*orb_1*orb_4*Overlap_matrix_1_4;
   ov_tot+=sh1.get_d()*sh5.get_d()*orb_1*orb_5*Overlap_matrix_1_5;
   ov_tot+=sh1.get_d()*sh6.get_d()*orb_1*orb_6*Overlap_matrix_1_6;
@@ -217,6 +218,7 @@ void sum_func(arma::mat & ov_tot, Shell &sh1,Shell &sh2, Shell &sh3, Shell &sh4,
   ov_tot+=sh2.get_d()*sh5.get_d()*orb_2*orb_5*Overlap_matrix_2_5;
   ov_tot+=sh2.get_d()*sh6.get_d()*orb_2*orb_6*Overlap_matrix_2_6;
 
+
   //atom1 3rd gauss w/atom2 3 gauss
   arma::mat Overlap_matrix_3_4(sh3.dim_func(), sh4.dim_func(),arma::fill::zeros);
   Eval_Ov(Overlap_matrix_3_4,sh3,sh4);
@@ -229,11 +231,11 @@ void sum_func(arma::mat & ov_tot, Shell &sh1,Shell &sh2, Shell &sh3, Shell &sh4,
   ov_tot+=sh3.get_d()*sh5.get_d()*orb_3*orb_5*Overlap_matrix_3_5;
   ov_tot+=sh3.get_d()*sh6.get_d()*orb_3*orb_6*Overlap_matrix_3_6;
 
+
 }
 
 
 //matrix manipulation fn
-
 //1. make the orthogonalization transformation: X =S−1/2
 void orth_trans(arma::mat &Overlap){
     
@@ -265,13 +267,12 @@ void ham_ortho(arma::mat &Hmat,arma::mat &S_inv){
 }
 
 //3. diagonalize: HV =Vε
-void h_diag(arma::mat &h, arma::mat &s){
-    // S_inv.t()*Hmat*S_inv
+void h_diag(arma::mat h, arma::mat s){
+
     arma::vec epsilon;
     arma::mat v_prim;
     eig_sym(epsilon, v_prim, h);  
-
-    // s = s*v_prim;
+    s = s*v_prim;
 }
 
 
@@ -282,36 +283,6 @@ void get_v(arma::mat &H1, arma::mat &H2){
   orth_trans(H1);
   orth_trans_(H2);
   H1=H1*H2;
-}
-
-//calc total energy
-/*
-You evaluate this by
-subtracting twice the energy of the H atom (−27.2 eV ) from your computed H2 energy.
-This result is also your next debugging case. The result should be around −4 eV (the
-minus sign indicates binding).
-*/
-
-void total_energy(arma::mat &h){
-    
-    arma::vec epsilon;
-    arma::mat v_prim;
-    eig_sym(epsilon, v_prim, h);    
-    h= arma::sum(epsilon,0)*2;
-}
-
-void total_energy_sep(arma::mat &h){
-    
-    arma::vec epsilon;
-    arma::mat v_prim;
-    eig_sym(epsilon, v_prim, h);    
-    h=epsilon*2;
-}
-
-void diff_calc(arma::mat &h2, arma::mat &h1){
-    h2= h2[0];
-    total_energy(h1);
-    h2=h2-h1; 
 }
 
 
@@ -329,31 +300,50 @@ int main(int argc, char* argv[])
   string fname_2=argv[2];
   ReadShellparameter(sh4,sh5,sh6,fname_2);
 
-  //h1*h1
+  // //h1*h1
   arma::mat ov_tot_1(sh1.dim_func(), sh1.dim_func(),arma::fill::zeros);
-  sum_func(ov_tot_1,sh4,sh5,sh6,sh4,sh5,sh6);
-  //h2*h1
+  sum_func(ov_tot_1,sh1,sh2,sh3,sh1,sh2,sh3);
+  // //h2*h1
   arma::mat ov_tot_2(sh1.dim_func(), sh1.dim_func(),arma::fill::zeros);
   sum_func(ov_tot_2,sh1,sh2,sh3,sh4,sh5,sh6);
   arma::mat ov_tot_={{ov_tot_1[0],ov_tot_2[0]},{ov_tot_2[0],ov_tot_1[0]}};
-
-  //h matrix
-  arma::mat h_diag= {{-13.6,0},{0,-13.6}};
-  h_mat_get(h_diag,ov_tot_);
-  arma::mat h_mat = {{-13.6,ov_tot_[1]},{ov_tot_[1],-13.6}};
-  h_mat.print();
-
-  // form the hamiltonian in the orthogonalized basis: H=XT HX
-  arma::mat ov_tot__={{ov_tot_1[0],ov_tot_2[0]},{ov_tot_2[0],ov_tot_1[0]}};
-  //S^-1/2
-  orth_trans(ov_tot__);
-  ov_tot__.print();
-  ham_ortho(ov_tot_,ov_tot__);
   ov_tot_.print();
 
-  // // 3. diagonalize: HV =Vε
-  // h_diag(ov_tot_,ov_tot__);
-  // ov_tot__.print();
+  //h matrix
+  arma::mat h_diag= {{ -13.6000 ,0},{0, -13.6000 }};
+  h_mat_get(h_diag,ov_tot_);
+  arma::mat h_mat = {{-13.6000 ,ov_tot_[1]},{ov_tot_[1], -13.6000 }};
+  h_mat.print();
+
+  //S^-1/2
+  arma::mat S_12={{ov_tot_1[0],ov_tot_2[0]},{ov_tot_2[0],ov_tot_1[0]}};
+  orth_trans(S_12);
+  S_12.print();
+
+  // form the hamiltonian in the orthogonalized basis: H=XT HX
+  ham_ortho(h_mat,S_12);
+  h_mat.print();
+
+  // 3. diagonalize: HV =Vε
+  arma::vec epsilon;
+  arma::mat v_prim;
+  eig_sym(epsilon, v_prim, h_mat);  
+  S_12 = S_12*v_prim;
+  S_12.print();
+
+
+  // h_diag(h_mat,S_12); NOT WORKING 
+
+  //MO Coeff
+  arma::mat H1={{ov_tot_1[0],ov_tot_2[0]},{ov_tot_2[0],ov_tot_1[0]}};
+  arma::mat H2={{ov_tot_1[0],ov_tot_2[0]},{ov_tot_2[0],ov_tot_1[0]}};
+  get_v(H1,H2);
+  H1.print();
+
+  //energy
+  epsilon.print();
+
+
 
 
 
