@@ -11,9 +11,7 @@
 #include <stdexcept>
 #include <armadillo>
 #include <stdio.h>
-
 using namespace std;
-
 
 class Shell
 {
@@ -28,9 +26,8 @@ class Shell
     public:
     Shell(int input_elem_num,double x0_input, double y0_input, double z0_input, double alpha_input, double d_input, int l_input):
     elem_num(input_elem_num),alpha(alpha_input), d(d_input), l(l_input) {R0={x0_input, y0_input, z0_input};}
-    Shell():alpha(0.5), l(0) {R0.zeros(3);}
+    Shell(): elem_num(0) {R0.zeros(3);}
     ~Shell(){}
-
 
     void Reset(int input_elem_num,double x0_input, double y0_input, double z0_input, double alpha_input, double d_input, int l_input){
         elem_num = input_elem_num;R0(0)=x0_input; R0(1)=y0_input; R0(2)=z0_input; alpha=alpha_input; d=d_input; l=l_input;
@@ -48,6 +45,7 @@ class Shell
     int get_elem_num(){return elem_num;}
     arma::vec get_R0(){ return R0;}
 };
+
 
 void ReadShellparameter(Shell& sh1, Shell& sh2, Shell& sh3, string &fname)
 {
@@ -103,17 +101,15 @@ double Overlap_onedim(double xa, double xb, double alphaa, double alphab, int la
   return result;
 }
 
-
-double Eval_Ov(Shell &sh1, Shell & sh2){
+arma::mat Eval_Ov(Shell &sh1, Shell & sh2)
+{
   int dim1 = sh1.dim_func(), dim2 = sh2.dim_func();
-
   int la = sh1.get_l(), lb = sh2.get_l();
   double alphaa = sh1.get_alpha(), alphab = sh2.get_alpha();
   arma::vec Ra = sh1.get_R0();
   arma::vec Rb = sh2.get_R0();
 
-
-  double overlap_tot=0;
+  arma::mat overlap_tot(sh1.dim_func(), sh2.dim_func(),arma::fill::zeros);
 
   int a_index = 0;
   for(int la_x = la; la_x >= 0; la_x--)
@@ -121,7 +117,7 @@ double Eval_Ov(Shell &sh1, Shell & sh2){
       int b_index = 0;
       for(int lb_x = lb; lb_x >= 0 ; lb_x--)
         for(int lb_y = lb- lb_x; lb_y >= 0; lb_y--) {
-          overlap_tot+= Overlap_onedim(Ra(0), Rb(0), alphaa, alphab, la_x, lb_x) *
+          overlap_tot(a_index,b_index)=Overlap_onedim(Ra(0), Rb(0), alphaa, alphab, la_x, lb_x) *
               Overlap_onedim(Ra(1), Rb(1), alphaa, alphab, la_y, lb_y) * 
               Overlap_onedim(Ra(2), Rb(2), alphaa, alphab, la - la_x - la_y, lb -lb_x - lb_y);
 
@@ -134,27 +130,61 @@ double Eval_Ov(Shell &sh1, Shell & sh2){
 
 }
 
-double normalize_func(Shell &sh1){
-  double same_orb=Eval_Ov(sh1,sh1);
-  same_orb=1/sqrt(same_orb);
+
+arma::mat normalize_func(Shell &sh1){
+  arma::mat same_orb=Eval_Ov(sh1,sh1);
+  if(sh1.get_l()==1)
+  {
+    same_orb=1/sqrt(same_orb.diag());
+  }
+
+  else 
+  {
+    same_orb=1/sqrt(same_orb);
+  }
   return same_orb;
 }
 
+//fix not compatible w non s-orbitals
+arma::mat sum_func_opt(Shell* arr1,Shell* arr2)
+{
+    arma::mat ov_tot(arr1[0].dim_func(), arr2[0].dim_func(),arma::fill::zeros);
 
-double sum_func_opt(Shell* arr1,Shell* arr2){
-    double ov_tot=0;
-    for(int i=0;i<=2;i++){
+    for(int i=0;i<=2;i++)
+    {
         for(int k=0;k<=2;k++)
         {
-            double orb_1=normalize_func(arr1[i]);
-            double orb_2=normalize_func(arr2[k]);
-            double ov_elem=Eval_Ov(arr1[i],arr2[k]);
-            ov_tot+=arr1[i].get_d()*arr2[k].get_d()*orb_1*orb_2*ov_elem;
+            //pp
+            if(arr1[i].get_l()==1&&arr2[k].get_l()==1)
+            {
+                arma::mat orb_1=normalize_func(arr1[i]);
+                arma::mat orb_2=normalize_func(arr2[k]);
+                arma::mat ov_elem=Eval_Ov(arr1[i],arr2[k]);
+                ov_tot+=arr1[i].get_d()*arr2[k].get_d()*orb_1(0)*orb_2(0)*ov_elem;
+            }
+            //sp
+            if((arr1[i].get_l()==0&&arr2[k].get_l()==1)||(arr1[i].get_l()==1&&arr2[k].get_l()==0))
+            {
+                arma::mat orb_1=normalize_func(arr1[i]);
+                arma::mat orb_2=normalize_func(arr2[k]);
+                arma::mat ov_elem=Eval_Ov(arr1[i],arr2[k]);
+                ov_tot+=arr1[i].get_d()*arr2[k].get_d()*orb_1(0)*orb_2(0)*ov_elem;
+            }
+            //ss
+            if(arr1[i].get_l()==0&&arr2[k].get_l()==0)
+            {
+                arma::mat orb_1=normalize_func(arr1[i]);
+                arma::mat orb_2=normalize_func(arr2[k]);
+                arma::mat ov_elem=Eval_Ov(arr1[i],arr2[k]);
+                ov_tot+=arr1[i].get_d()*arr2[k].get_d()*orb_1*orb_2*ov_elem;
+            }
+
         }
     }
-    return ov_tot;
-}
 
+    return ov_tot;    
+
+}
 
 double gamma_func(Shell* arr1,Shell* arr2)
 {
@@ -167,10 +197,10 @@ double gamma_func(Shell* arr1,Shell* arr2)
       {
         for(int m=0;m<=2;m++)
         {
-          double orb_1=normalize_func(arr1[i]);
-          double orb_2=normalize_func(arr1[k]);
-          double orb_3=normalize_func(arr2[l]);
-          double orb_4=normalize_func(arr2[m]);
+          arma::mat orb_1=normalize_func(arr1[i]);
+          arma::mat orb_2=normalize_func(arr1[k]);
+          arma::mat orb_3=normalize_func(arr2[l]);
+          arma::mat orb_4=normalize_func(arr2[m]);
 
           arma::vec Ra=arr1[i].get_R0();
 
@@ -196,17 +226,16 @@ double gamma_func(Shell* arr1,Shell* arr2)
           double zer_AB=U*erf(T_)*1/R_ab_dist;
 
 
-          double d_prime_1=arr1[i].get_d()*orb_1;
-          double d_prime_2=arr1[k].get_d()*orb_2;
-          double d_prime_3=arr2[l].get_d()*orb_3;
-          double d_prime_4=arr2[m].get_d()*orb_4;
+          double d_prime_1=arr1[i].get_d()*orb_1(0);
+          double d_prime_2=arr1[k].get_d()*orb_2(0);
+          double d_prime_3=arr2[l].get_d()*orb_3(0);
+          double d_prime_4=arr2[m].get_d()*orb_4(0);
 
           double zer_AA=U*sqrt(2*V_squared)*sqrt(2/M_PI);
 
           if(R_ab_dist==0)
           {
             tot+=d_prime_1*d_prime_2*d_prime_3*d_prime_4*zer_AA;
-
           }
           else
           {
@@ -238,20 +267,9 @@ double h_core_diag_off(double beta_a, double beta_b,double S_mu_nu)
 arma::mat scf(arma::mat h_core){
   arma::mat F_a=h_core;
   arma::mat F_b=h_core;
-
-  
-
   arma::vec epsilon_a;
   arma::mat C_a;
   eig_sym(epsilon_a,C_a,F_a);
-
-  // cout << epsilon_a;
-  // cout << "\n\n";
-  // cout << C_a;
-  // cout << "\n\n";
-  // cout << C_a.col(0)*C_a.col(0).t();
-  // cout << "\n\n";
-
 
 
   return C_a.col(0)*C_a.col(0).t();
@@ -285,193 +303,95 @@ double scf_real_v_nuc(double Z_a, double Z_b, double n_atom, Shell* arr1, Shell*
       V_nuc+=(Z_a*Z_b)/R_ab_dist;
 
     }
-
   }
-
   return V_nuc*27.2114;
 
 }
 
 
-
-
-double scf_real(double V_nuc,double gamma_AA,double gamma_AB,arma::mat h_mu_nu,arma::mat g_mu_nu)
+void create_gamma_mat(arma::mat &gamma, Shell** arr1)
 {
-  double energy_cdno2;
-  double energy_cdno2_new;
-  double tol=1e-4;
-  while(abs(energy_cdno2-energy_cdno2_new)<tol)
-  {
-    arma::mat hcore= h_mu_nu;
-    arma::mat fock_mat_a = h_mu_nu+g_mu_nu;
-    arma::mat fock_mat_b = h_mu_nu+g_mu_nu;
-
-    arma::vec ep_a;
-    arma::mat rho_mat_alpha;
-    eig_sym(ep_a,rho_mat_alpha,fock_mat_a);
-
-    cout << ep_a;
-    cout << "\n\n";
-
-    arma::vec ep_b;
-    arma::mat rho_mat_beta;
-    eig_sym(ep_b,rho_mat_beta,fock_mat_b);
-
-    cout << ep_b;
-    cout << "\n\n";
-
-    arma::mat C_a=rho_mat_alpha.t()*rho_mat_alpha;
-    arma::mat C_b=rho_mat_beta.t()*rho_mat_beta;
-
-    arma::mat P_a_new=rho_mat_alpha.col(0)*rho_mat_alpha.col(0).t();
-    arma::mat P_b_new=rho_mat_beta.col(0)*rho_mat_beta.col(0).t();
-
-    arma::mat P_t=P_a_new.col(0)+P_b_new.col(0);
-
-    double Pmat_a=P_a_new(0);
-    double P_aa_tot=sum(P_a_new.col(0));
-    double P_bb_tot=sum(P_b_new.col(0));
-    double Pmat_b=P_b_new(0);
-    
-    arma::mat G_a={{g_mat(P_aa_tot,Pmat_a,P_bb_tot,gamma_AA,gamma_AB),g_mat_off(Pmat_a,gamma_AB)},{g_mat_off(Pmat_a,gamma_AB),g_mat(P_aa_tot,Pmat_a,P_bb_tot,gamma_AA,gamma_AB)}};
-    arma::mat G_b={{g_mat(P_aa_tot,Pmat_b,P_bb_tot,gamma_AA,gamma_AB),g_mat_off(Pmat_b,gamma_AB)},{g_mat_off(Pmat_b,gamma_AB),g_mat(P_aa_tot,Pmat_b,P_bb_tot,gamma_AA,gamma_AB)}};
-    arma::mat F_a=h_mu_nu+G_a; 
-    arma::mat F_b=h_mu_nu+G_b;
-
-    cout << V_nuc;
-    cout << "\n\n";
-
-    cout << (0.5*ep_a(0))+(0.5*ep_b(0));
-    cout << "\n\n";
-
-    energy_cdno2=(0.5*ep_a(0))+(0.5*ep_b(0))+V_nuc;
-
-
-    //next iter
-    fock_mat_a=F_a;
-    fock_mat_b=F_b;
-
-    arma::vec ep_a_;
-    arma::vec ep_b_;
-
-    eig_sym(ep_a_,rho_mat_alpha,fock_mat_a);
-    eig_sym(ep_b_,rho_mat_beta,fock_mat_b);
-
-    cout << ep_a_;
-    cout <<"\n\n";
-
-    cout << ep_b_;
-    cout << "\n\n";
-
-
-    C_a=rho_mat_alpha.t()*rho_mat_alpha;
-    C_b=rho_mat_beta.t()*rho_mat_beta;
-    P_a_new=rho_mat_alpha.col(0)*rho_mat_alpha.col(0).t();
-    P_b_new=rho_mat_beta.col(0)*rho_mat_beta.col(0).t();
-
-    P_t=P_a_new.col(0)+P_b_new.col(0);
-    
-    Pmat_a=P_a_new(0);
-    P_aa_tot=sum(P_a_new.col(0));
-    P_bb_tot=sum(P_b_new.col(0));
-    Pmat_b=P_b_new(0);
-    
-    G_a={{g_mat(P_aa_tot,Pmat_a,P_bb_tot,gamma_AA,gamma_AB),g_mat_off(Pmat_a,gamma_AB)},{g_mat_off(Pmat_a,gamma_AB),g_mat(P_aa_tot,Pmat_a,P_bb_tot,gamma_AA,gamma_AB)}};
-    G_b={{g_mat(P_aa_tot,Pmat_b,P_bb_tot,gamma_AA,gamma_AB),g_mat_off(Pmat_b,gamma_AB)},{g_mat_off(Pmat_b,gamma_AB),g_mat(P_aa_tot,Pmat_b,P_bb_tot,gamma_AA,gamma_AB)}};
-
-    F_a=h_mu_nu+G_a; 
-    F_b=h_mu_nu+G_b;
-
-    
-    cout << arma::dot(P_a_new.col(0),h_mu_nu.col(0))/2;
-    cout << "\n\n";
-
-    cout << V_nuc;
-    cout << "\n\n";
-
-    cout << (0.5*(ep_a_(0)+ep_a(0)))+(0.5*(ep_b_(0)+ep_b(0)));
-    cout << "\n\n";
-
-    arma::mat Ptotal= P_a_new+P_b_new;
-    cout << Ptotal;
-    cout << "\n\n";
-
-    cout << arma::dot(Ptotal, hcore) / 2;
-    cout << "\n\n";
-
-    double ptot=arma::dot(Ptotal, hcore) / 2;
-
-    cout << ep_a_(0)+ptot;
-    cout << "\n\n";
-
-
-
-    energy_cdno2_new=(0.5*(ep_a_(0)+ep_a(0)))+(0.5*(ep_b_(0)+ep_b(0)))+V_nuc;
-
-  }
-
-  return energy_cdno2_new;
-
+    double row_number=size(gamma)[0];
+    double col_number= size(gamma)[1];
+    for (int i = 0; i < row_number; i++) 
+    {
+        for (int j = 0; j < col_number; j++) 
+        {
+            gamma(i,j)=gamma_func(arr1[i],arr1[j]);
+        }
+    }
 }
 
+void create_ov_mat(arma::mat overlap, Shell** arr1)
+{
+    double row_number=size(overlap)[0];
+    double col_number= size(overlap)[1];
+    for (int i = 0; i < row_number; i++) 
+    {
+        for (int j = 0; j < col_number; j++) 
+        {
+            if(arr1[i][0].get_l()==1&&arr1[j][0].get_l()==1)
+            {
+                overlap(i,j)=sum_func_opt(arr1[i],arr1[j]).diag()[0];
+                overlap(i,j)=sum_func_opt(arr1[i],arr1[j]).diag()[1];
+                overlap(i,j)=sum_func_opt(arr1[i],arr1[j]).diag()[2];
+
+            }
 
 
+        }
+    }
+}
 
 int main(int argc, char* argv[])
 {
+//H1 
   Shell sh1,sh2,sh3;
   string fname_1=argv[1];
   ReadShellparameter(sh1,sh2,sh3,fname_1);
   Shell shell_arr[3]={sh1,sh2,sh3};
-
+//H3 
   Shell sh4,sh5,sh6;
   string fname_2=argv[2];
   ReadShellparameter(sh4,sh5,sh6,fname_2);
   Shell shell_arr_2[3]={sh4,sh5,sh6};
 
+//C1-2s
+  Shell sh7,sh8,sh9;
+  string fname_3=argv[3];
+  ReadShellparameter(sh7,sh8,sh9,fname_3);
+  Shell shell_arr_3[3]={sh7,sh8,sh9};
+  
+//C1-2p
+  Shell sh10,sh11,sh12;
+  string fname_4=argv[4];
+  ReadShellparameter(sh10,sh11,sh12,fname_4);
+  Shell shell_arr_4[3]={sh10,sh11,sh12};
 
-  arma::mat gamma_mat={{gamma_func(shell_arr,shell_arr),gamma_func(shell_arr,shell_arr_2)},{gamma_func(shell_arr_2,shell_arr),gamma_func(shell_arr_2,shell_arr_2)}};
-  gamma_mat.print();
+//C2-2s
+  Shell sh13,sh14,sh15;
+  string fname_5=argv[5];
+  ReadShellparameter(sh13,sh14,sh15,fname_5);
+  Shell shell_arr_5[3]={sh13,sh14,sh15};
+//C2-2p
+  Shell sh16,sh17,sh18;
+  string fname_6=argv[6];
+  ReadShellparameter(sh16,sh17,sh18,fname_6);
+  Shell shell_arr_6[3]={sh16,sh17,sh18};
 
-  double s_mu_nu=sum_func_opt(shell_arr,shell_arr_2);
-  double gamma_AA=gamma_func(shell_arr,shell_arr);
-  cout << gamma_AA;
-  cout << "\n\n";
-  double gamma_AB=gamma_func(shell_arr_2,shell_arr);
-  cout << gamma_AB;
-  cout << "\n\n";
+  //gamma
+  arma::mat gamma(4, 4,arma::fill::zeros);
+  Shell* arr1[4]={shell_arr,shell_arr_3,shell_arr_5,shell_arr_2};
+  create_gamma_mat(gamma,arr1);
+//   gamma.print();
 
-  arma::mat h_core_mat={{h_core_diag(7.176,1,1,gamma_AA,gamma_AB),h_core_diag_off(-9,-9,s_mu_nu)},{h_core_diag_off(-9,-9,s_mu_nu),h_core_diag(7.176,1,1,gamma_AA,gamma_AB)}};
-  h_core_mat.print();
-  cout << "\n\n";
-
-
-  arma::mat Pa=scf(h_core_mat);
-  arma::mat Pa_tot=Pa.col(0)+Pa.col(0);
-  Pa_tot.print();
-  cout << "\n\n";
-
-
-  arma::mat g_mat_a={{g_mat(1,0.5,1,gamma_AA,gamma_AB),g_mat_off(0.5,gamma_AB)},{g_mat_off(0.5,gamma_AB),g_mat(1,0.5,1,gamma_AA,gamma_AB)}};
-  g_mat_a.print();
-  cout << "\n\n";
-
-
-  arma::mat result=g_mat_a+h_core_mat;
-  result.print();
-  cout << "\n\n";
-
-
-  double v_nuc=scf_real_v_nuc(1,1,2,shell_arr,shell_arr_2);
-  cout << v_nuc;
-  cout << "\n\n";
+  //ov
+  arma::mat overlap(10,10,arma::fill::zeros);
+  Shell* arr2[10]={shell_arr,shell_arr_3,shell_arr_4,shell_arr_4,shell_arr_4,shell_arr_5,shell_arr_6,shell_arr_6,shell_arr_6,shell_arr_2};
+  create_ov_mat(overlap,arr2);
+  overlap.print();
 
 
-  arma::mat g_mu_nu(2, 2,arma::fill::zeros);
-  cout << scf_real(v_nuc,gamma_AA,gamma_AB,h_core_mat,g_mu_nu);
-  cout << "\n\n";
-
-
-
+  
   return EXIT_SUCCESS;
 }
