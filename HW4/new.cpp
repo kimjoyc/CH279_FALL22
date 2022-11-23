@@ -415,7 +415,7 @@ double scf_real_v_nuc(double n_atom, Shell** arr1)
 }
 
 
-void g_mat(arma::mat &gmat,arma::mat pt,arma::mat gamma2_off,arma::mat gamma3_diag,arma::mat pmat,Shell** arr1)
+void g_mat(arma::mat &gmat,arma::mat pt,arma::mat gamma2_off,arma::mat gamma3_diag,arma::mat pmat,Shell** arr1,Shell** arr2)
 {
   double row_number=size(gmat)[0];
   double col_number= size(gmat)[1];
@@ -435,7 +435,11 @@ void g_mat(arma::mat &gmat,arma::mat pt,arma::mat gamma2_off,arma::mat gamma3_di
 
       else
       {
-        gmat(i,j)=0.5*(arr1[i][0].get_gamma()+arr1[j][0].get_gamma())*sum_func_opt(arr1[i],arr1[j])-pmat(i,j)*gamma_func(arr1[i],arr1[j]);
+        gmat(i,j)=0.5*(arr1[i][0].get_gamma()+arr1[j][0].get_gamma())*sum_func_opt(arr1[i],arr1[j])-pmat(i,j)*gamma_func(arr2[i],arr2[j]);
+        // gmat(i,j)=0.5*(arr1[i][0].get_gamma()+arr1[j][0].get_gamma())*
+        // gmat(i,j)=sum_func_opt(arr1[i],arr1[j]);
+        // gmat(i,j)=-pmat(i,j)*gamma_func(arr2[i],arr2[j]);
+
 
       }
 
@@ -447,149 +451,149 @@ void g_mat(arma::mat &gmat,arma::mat pt,arma::mat gamma2_off,arma::mat gamma3_di
 
 
 
-double scf_real(int n_atoms,int p, int q, arma::mat h_mu_nu,arma::mat g_mu_nu,arma::mat gmat_a, arma::mat gmat_b,Shell **arr1,Shell**arr3,Shell**arr2)
-{
-  double energy_cdno2;
-  double energy_cdno2_new;
-  double tol=1e-4;
+// double scf_real(int n_atoms,int p, int q, arma::mat h_mu_nu,arma::mat g_mu_nu,arma::mat gmat_a, arma::mat gmat_b,Shell **arr1,Shell**arr3,Shell**arr2)
+// {
+//   double energy_cdno2;
+//   double energy_cdno2_new;
+//   double tol=1e-4;
 
-  while(abs(energy_cdno2-energy_cdno2_new)<tol)
-  {
+//   while(abs(energy_cdno2-energy_cdno2_new)<tol)
+//   {
 
-    arma::mat hcore=h_mu_nu;
-    arma::mat fock_mat_a=h_mu_nu+g_mu_nu;
-    arma::mat fock_mat_b=h_mu_nu+g_mu_nu;
+//     arma::mat hcore=h_mu_nu;
+//     arma::mat fock_mat_a=h_mu_nu+g_mu_nu;
+//     arma::mat fock_mat_b=h_mu_nu+g_mu_nu;
 
-    arma::vec ep_a;
-    arma::mat rho_mat_alpha;
-    eig_sym(ep_a,rho_mat_alpha,fock_mat_a);
+//     arma::vec ep_a;
+//     arma::mat rho_mat_alpha;
+//     eig_sym(ep_a,rho_mat_alpha,fock_mat_a);
     
-    cout << ep_a; 
-    cout << "\n\n";
+//     cout << ep_a; 
+//     cout << "\n\n";
 
-    cout << rho_mat_alpha;
-    cout << "\n\n";
+//     cout << rho_mat_alpha;
+//     cout << "\n\n";
 
-    arma::vec ep_b;
-    arma::mat rho_mat_beta;
-    eig_sym(ep_b,rho_mat_beta,fock_mat_b);
+//     arma::vec ep_b;
+//     arma::mat rho_mat_beta;
+//     eig_sym(ep_b,rho_mat_beta,fock_mat_b);
 
 
-    arma::mat P_a_new=rho_mat_alpha.cols(0,n_atoms)*rho_mat_alpha.cols(0,n_atoms).t();
-    cout << P_a_new;
-    cout << "\n\n";
-    arma::mat P_b_new=rho_mat_beta.cols(0,n_atoms)*rho_mat_beta.cols(0,n_atoms).t();
-    arma::mat P_t = P_a_new+P_b_new;
-    cout << P_t;
-    cout << "\n\n";
+//     arma::mat P_a_new=rho_mat_alpha.cols(0,n_atoms)*rho_mat_alpha.cols(0,n_atoms).t();
+//     cout << P_a_new;
+//     cout << "\n\n";
+//     arma::mat P_b_new=rho_mat_beta.cols(0,n_atoms)*rho_mat_beta.cols(0,n_atoms).t();
+//     arma::mat P_t = P_a_new+P_b_new;
+//     cout << P_t;
+//     cout << "\n\n";
 
-    arma::mat pt(n_atoms,p+q,arma::fill::zeros);
-    create_pt(pt,P_t,arr1,arr3);
-    pt.print();
-    cout << "\n\n";
+//     arma::mat pt(n_atoms,p+q,arma::fill::zeros);
+//     create_pt(pt,P_t,arr1,arr3);
+//     pt.print();
+//     cout << "\n\n";
 
-    arma::mat pt_(p+q,p+q,arma::fill::zeros);
-    create_pt2(pt_,P_t,arr3);
-    pt_.print();
-    cout << "\n\n";
+//     arma::mat pt_(p+q,p+q,arma::fill::zeros);
+//     create_pt2(pt_,P_t,arr3);
+//     pt_.print();
+//     cout << "\n\n";
 
-    arma::mat gamma_fun(p+q,n_atoms,arma::fill::zeros);
-    gamma_ptot_not_a(gamma_fun,pt,arr3,arr1);
-    gamma_fun.print();
-    cout << "\n\n";
+//     arma::mat gamma_fun(p+q,n_atoms,arma::fill::zeros);
+//     gamma_ptot_not_a(gamma_fun,pt,arr3,arr1);
+//     gamma_fun.print();
+//     cout << "\n\n";
 
-    arma::mat gamma4(p+q,n_atoms,arma::fill::zeros);
-    create_gamma_diag(gamma4,arr3,arr1);
-    gamma4.print();
-    cout << "\n\n";
+//     arma::mat gamma4(p+q,n_atoms,arma::fill::zeros);
+//     create_gamma_diag(gamma4,arr3,arr1);
+//     gamma4.print();
+//     cout << "\n\n";
 
-    // arma::mat gmat_check(p+q,p+q,arma::fill::zeros);
-    // g_mat(gmat_check,pt_,gamma_fun,gamma4,P_t,arr2);
-    // gmat_check.print();
-    // cout << "\n\n";
+//     // arma::mat gmat_check(p+q,p+q,arma::fill::zeros);
+//     // g_mat(gmat_check,pt_,gamma_fun,gamma4,P_t,arr2);
+//     // gmat_check.print();
+//     // cout << "\n\n";
     
 
 
-    g_mat(gmat_a,pt_,gamma_fun,gamma4,P_t,arr2);
-    g_mat(gmat_b,pt_,gamma_fun,gamma4,P_t,arr2);
+//     g_mat(gmat_a,pt_,gamma_fun,gamma4,P_t,arr2);
+//     g_mat(gmat_b,pt_,gamma_fun,gamma4,P_t,arr2);
 
-    arma::mat G_a=gmat_a;
-    cout << gmat_a;
-    cout << "\n\n";
-    arma::mat G_b=gmat_b;
+//     arma::mat G_a=gmat_a;
+//     cout << gmat_a;
+//     cout << "\n\n";
+//     arma::mat G_b=gmat_b;
 
-    arma::mat F_a=h_mu_nu+G_a; 
-    arma::mat F_b=h_mu_nu+G_b;
+//     arma::mat F_a=h_mu_nu+G_a; 
+//     arma::mat F_b=h_mu_nu+G_b;
 
-    double V_nuc = scf_real_v_nuc(n_atoms,arr1);
-    cout << V_nuc;
-    cout << "\n\n";
+//     double V_nuc = scf_real_v_nuc(n_atoms,arr1);
+//     cout << V_nuc;
+//     cout << "\n\n";
 
-    // cout << ep_a(0,4);
-//how to grab multiple vec
-    energy_cdno2=0.5*(ep_a(0)+ep_a(1)+ep_a(2)+ep_a(3)+ep_a(4))+0.5*(ep_b(0)+ep_b(1)+ep_b(2)+ep_b(3),ep_a(4))+V_nuc;
+//     // cout << ep_a(0,4);
+// //how to grab multiple vec
+//     energy_cdno2=0.5*(ep_a(0)+ep_a(1)+ep_a(2)+ep_a(3)+ep_a(4))+0.5*(ep_b(0)+ep_b(1)+ep_b(2)+ep_b(3),ep_a(4))+V_nuc;
 
-    //next iter
-    fock_mat_a=F_a;
-    fock_mat_b=F_b;
-    eig_sym(ep_a,rho_mat_alpha,fock_mat_a);
-    eig_sym(ep_b,rho_mat_beta,fock_mat_b);
-    P_a_new=rho_mat_alpha.cols(0,n_atoms)*rho_mat_alpha.cols(0,n_atoms).t();
-    cout << P_a_new;
-    cout << "\n\n";
-    P_b_new=rho_mat_beta.cols(0,n_atoms)*rho_mat_beta.cols(0,n_atoms).t();
-    P_t = P_a_new+P_b_new;
-    cout << P_t;
-    cout << "\n\n";
+//     //next iter
+//     fock_mat_a=F_a;
+//     fock_mat_b=F_b;
+//     eig_sym(ep_a,rho_mat_alpha,fock_mat_a);
+//     eig_sym(ep_b,rho_mat_beta,fock_mat_b);
+//     P_a_new=rho_mat_alpha.cols(0,n_atoms)*rho_mat_alpha.cols(0,n_atoms).t();
+//     cout << P_a_new;
+//     cout << "\n\n";
+//     P_b_new=rho_mat_beta.cols(0,n_atoms)*rho_mat_beta.cols(0,n_atoms).t();
+//     P_t = P_a_new+P_b_new;
+//     cout << P_t;
+//     cout << "\n\n";
 
-    arma::mat pt_next(n_atoms,p+q,arma::fill::zeros);
-    create_pt(pt_next,P_t,arr1,arr3);
-    pt_next.print();
-    cout << "\n\n";
+//     arma::mat pt_next(n_atoms,p+q,arma::fill::zeros);
+//     create_pt(pt_next,P_t,arr1,arr3);
+//     pt_next.print();
+//     cout << "\n\n";
 
-    arma::mat pt_2(p+q,p+q,arma::fill::zeros);
-    create_pt2(pt_2,P_t,arr3);
-    pt_2.print();
-    cout << "\n\n";
+//     arma::mat pt_2(p+q,p+q,arma::fill::zeros);
+//     create_pt2(pt_2,P_t,arr3);
+//     pt_2.print();
+//     cout << "\n\n";
 
-    arma::mat gamma_fun_next(p+q,n_atoms,arma::fill::zeros);
-    gamma_ptot_not_a(gamma_fun,pt,arr3,arr1);
-    gamma_fun_next.print();
-    cout << "\n\n";
+//     arma::mat gamma_fun_next(p+q,n_atoms,arma::fill::zeros);
+//     gamma_ptot_not_a(gamma_fun,pt,arr3,arr1);
+//     gamma_fun_next.print();
+//     cout << "\n\n";
 
-    arma::mat gamma4_n(p+q,n_atoms,arma::fill::zeros);
-    create_gamma_diag(gamma4_n,arr3,arr1);
-    gamma4_n.print();
-    cout << "\n\n";
+//     arma::mat gamma4_n(p+q,n_atoms,arma::fill::zeros);
+//     create_gamma_diag(gamma4_n,arr3,arr1);
+//     gamma4_n.print();
+//     cout << "\n\n";
     
-    G_a=G_a;
-    G_b=G_b;
+//     G_a=G_a;
+//     G_b=G_b;
 
-    F_a=h_mu_nu+G_a; 
-    F_b=h_mu_nu+G_b;
+//     F_a=h_mu_nu+G_a; 
+//     F_b=h_mu_nu+G_b;
 
-    cout << ep_a;
-    cout << "\n\n";
+//     cout << ep_a;
+//     cout << "\n\n";
 
-    arma::mat Ptotal= P_a_new+P_b_new;
-    double ptot=arma::dot(Ptotal, hcore) / 2;
+//     arma::mat Ptotal= P_a_new+P_b_new;
+//     double ptot=arma::dot(Ptotal, hcore) / 2;
 
-    cout << ptot;
-    cout << "\n\n";
+//     cout << ptot;
+//     cout << "\n\n";
 
-    cout << ep_a; 
-    cout << "\n\n";
+//     cout << ep_a; 
+//     cout << "\n\n";
 
-    double elec_eng=ep_a(0)+ep_a(1)+ep_a(2)+ep_a(3)+ep_a(4)+ptot;
-    cout << elec_eng;
-    cout << "\n\n";
+//     double elec_eng=ep_a(0)+ep_a(1)+ep_a(2)+ep_a(3)+ep_a(4)+ptot;
+//     cout << elec_eng;
+//     cout << "\n\n";
 
 
-    energy_cdno2_new=0.5*(ep_a(0)+ep_a(1)+ep_a(2)+ep_a(3)+ep_a(4))+0.5*(ep_b(0)+ep_b(1)+ep_b(2)+ep_b(3),ep_a(4))+V_nuc;
+//     energy_cdno2_new=0.5*(ep_a(0)+ep_a(1)+ep_a(2)+ep_a(3)+ep_a(4))+0.5*(ep_b(0)+ep_b(1)+ep_b(2)+ep_b(3),ep_a(4))+V_nuc;
 
-  }
-  return energy_cdno2_new;
-}
+//   }
+//   return energy_cdno2_new;
+// }
 
 
 
@@ -692,9 +696,13 @@ int main(int argc, char* argv[])
   gamma4.print();
   cout << "\n\n";
 
+
+
 //hmat
   arma::mat hmat(10,10,arma::fill::zeros);
   create_h_core_mat(hmat,gamma3,gamma4,arr2);
+  hmat.print();
+  cout << "\n\n";
 
 
 //gmat test
@@ -703,17 +711,11 @@ int main(int argc, char* argv[])
   arma::mat gmat_b(10,10,arma::fill::zeros);
 
 
-//eigen
 
-
-
-  // cout << scf_real(4,hmat,gmat,gmat_a,gmat_b, gamma3_offdiag,arr1,arr3);
-  // cout << "\n\n";
 
     arma::vec ep_a;
     arma::mat rho_mat_alpha;
     eig_sym(ep_a,rho_mat_alpha,hmat);
-    // cout << ep_a.head_rows();
     cout << "\n\n";
 
     arma::mat P_b_new=rho_mat_alpha.cols(0,4)*rho_mat_alpha.cols(0,4).t();
@@ -739,22 +741,18 @@ int main(int argc, char* argv[])
     cout << "\n\n";
     
 
-// void g_mat(arma::mat &gmat,arma::mat pt,arma::mat gamma2_off,arma::mat gamma3_diag,arma::mat pmat,Shell** arr1)
 
     arma::mat gmat_check(10,10,arma::fill::zeros);
-    g_mat(gmat_check,pt_,gamma_fun,gamma4,P_t,arr2);
+    g_mat(gmat_check,pt_,gamma_fun,gamma4,P_t,arr2,arr3);
     gmat_check.print();
     cout << "\n\n";
 
-    cout << gmat_check.diag();
-    cout << "\n\n";
 
     arma::mat g_mu_nu(10,10,arma::fill::zeros);
 
 
-    // double scf_real(int n_atoms,int p, int q, arma::mat h_mu_nu,arma::mat g_mu_nu,arma::mat gmat_a, arma::mat gmat_b, arma::mat gamma3_offdiag,Shell **arr1,Shell**arr3,Shell**arr2)
-    cout <<scf_real(4,5,5,hmat,g_mu_nu,gmat_a,gmat_b,arr1,arr3,arr2);
-    cout << "\n\n";
+    // cout <<scf_real(4,5,5,hmat,g_mu_nu,gmat_a,gmat_b,arr1,arr3,arr2);
+    // cout << "\n\n";
 
 
 
