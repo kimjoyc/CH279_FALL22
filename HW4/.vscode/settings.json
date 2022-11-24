@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "armadillo": "cpp"
+        "armadillo": "cpp",
+        "iostream": "cpp"
     }
 }
