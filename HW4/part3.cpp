@@ -297,12 +297,14 @@ double scf_real_v_nuc(double Z_a, double Z_b, double n_atom, Shell* arr1, Shell*
 
 double scf_real(double V_nuc,double gamma_AA,double gamma_AB,arma::mat h_mu_nu,arma::mat g_mu_nu)
 {
-  double energy_cdno2;
+  double energy_cdno2=-40.569151;
   double energy_cdno2_new;
   double tol=1e-4;
-  while(abs(energy_cdno2-energy_cdno2_new)<tol)
-  {
-    arma::mat hcore= h_mu_nu;
+  int iteration =0;
+
+  double energy_init;
+
+    arma::mat hcore=h_mu_nu;
     arma::mat fock_mat_a = h_mu_nu+g_mu_nu;
     arma::mat fock_mat_b = h_mu_nu+g_mu_nu;
 
@@ -310,22 +312,18 @@ double scf_real(double V_nuc,double gamma_AA,double gamma_AB,arma::mat h_mu_nu,a
     arma::mat rho_mat_alpha;
     eig_sym(ep_a,rho_mat_alpha,fock_mat_a);
 
-    cout << ep_a;
-    cout << "\n\n";
+
 
     arma::vec ep_b;
     arma::mat rho_mat_beta;
     eig_sym(ep_b,rho_mat_beta,fock_mat_b);
 
-    cout << ep_b;
-    cout << "\n\n";
 
     arma::mat C_a=rho_mat_alpha.t()*rho_mat_alpha;
     arma::mat C_b=rho_mat_beta.t()*rho_mat_beta;
 
     arma::mat P_a_new=rho_mat_alpha.col(0)*rho_mat_alpha.col(0).t();
     arma::mat P_b_new=rho_mat_beta.col(0)*rho_mat_beta.col(0).t();
-
     arma::mat P_t=P_a_new.col(0)+P_b_new.col(0);
 
     double Pmat_a=P_a_new(0);
@@ -338,29 +336,29 @@ double scf_real(double V_nuc,double gamma_AA,double gamma_AB,arma::mat h_mu_nu,a
     arma::mat F_a=h_mu_nu+G_a; 
     arma::mat F_b=h_mu_nu+G_b;
 
-    cout << V_nuc;
-    cout << "\n\n";
-
-    cout << (0.5*ep_a(0))+(0.5*ep_b(0));
-    cout << "\n\n";
-
-    energy_cdno2=(0.5*ep_a(0))+(0.5*ep_b(0))+V_nuc;
-
-
-    //next iter
+    energy_init=(0.5*ep_a(0))+(0.5*ep_b(0))+V_nuc;
+    
+      //next iter
     fock_mat_a=F_a;
     fock_mat_b=F_b;
+
+
+  while(abs(energy_cdno2-energy_cdno2_new)>=tol)
+  {
+    cout << iteration++;
+    cout << "\n\n";
+
+
 
     arma::vec ep_a_;
     arma::vec ep_b_;
 
-    eig_sym(ep_a_,rho_mat_alpha,fock_mat_a);
-    eig_sym(ep_b_,rho_mat_beta,fock_mat_b);
+    arma::mat rho_mat_alpha_;
+    arma::mat rho_mat_beta_;
+    eig_sym(ep_a_,rho_mat_alpha_,fock_mat_a);
+    eig_sym(ep_b_,rho_mat_beta_,fock_mat_b);
 
     cout << ep_a_;
-    cout <<"\n\n";
-
-    cout << ep_b_;
     cout << "\n\n";
 
 
@@ -379,34 +377,18 @@ double scf_real(double V_nuc,double gamma_AA,double gamma_AB,arma::mat h_mu_nu,a
     G_a={{g_mat(P_aa_tot,Pmat_a,P_bb_tot,gamma_AA,gamma_AB),g_mat_off(Pmat_a,gamma_AB)},{g_mat_off(Pmat_a,gamma_AB),g_mat(P_aa_tot,Pmat_a,P_bb_tot,gamma_AA,gamma_AB)}};
     G_b={{g_mat(P_aa_tot,Pmat_b,P_bb_tot,gamma_AA,gamma_AB),g_mat_off(Pmat_b,gamma_AB)},{g_mat_off(Pmat_b,gamma_AB),g_mat(P_aa_tot,Pmat_b,P_bb_tot,gamma_AA,gamma_AB)}};
 
-    F_a=h_mu_nu+G_a; 
-    F_b=h_mu_nu+G_b;
+    arma::mat F_a_=h_mu_nu+G_a; 
+    arma::mat F_b_=h_mu_nu+G_b;
 
-    
-    cout << arma::dot(P_a_new.col(0),h_mu_nu.col(0))/2;
-    cout << "\n\n";
-
-    cout << V_nuc;
-    cout << "\n\n";
-
-    cout << (0.5*(ep_a_(0)+ep_a(0)))+(0.5*(ep_b_(0)+ep_b(0)));
-    cout << "\n\n";
-
-    arma::mat Ptotal= P_a_new+P_b_new;
-    cout << Ptotal;
-    cout << "\n\n";
-
-    cout << arma::dot(Ptotal, hcore) / 2;
-    cout << "\n\n";
-
+    arma::mat Ptotal=P_a_new+P_b_new;
     double ptot=arma::dot(Ptotal, hcore) / 2;
 
-    cout << ep_a_(0)+ptot;
-    cout << "\n\n";
-
-
-
     energy_cdno2_new=(0.5*(ep_a_(0)+ep_a(0)))+(0.5*(ep_b_(0)+ep_b(0)))+V_nuc;
+
+    fock_mat_a=F_a_;
+    fock_mat_b=F_b_;
+
+
 
   }
 
@@ -431,40 +413,27 @@ int main(int argc, char* argv[])
 
 
   arma::mat gamma_mat={{gamma_func(shell_arr,shell_arr),gamma_func(shell_arr,shell_arr_2)},{gamma_func(shell_arr_2,shell_arr),gamma_func(shell_arr_2,shell_arr_2)}};
-  gamma_mat.print();
 
   double s_mu_nu=sum_func_opt(shell_arr,shell_arr_2);
   double gamma_AA=gamma_func(shell_arr,shell_arr);
-  cout << gamma_AA;
-  cout << "\n\n";
+
   double gamma_AB=gamma_func(shell_arr_2,shell_arr);
-  cout << gamma_AB;
-  cout << "\n\n";
 
   arma::mat h_core_mat={{h_core_diag(7.176,1,1,gamma_AA,gamma_AB),h_core_diag_off(-9,-9,s_mu_nu)},{h_core_diag_off(-9,-9,s_mu_nu),h_core_diag(7.176,1,1,gamma_AA,gamma_AB)}};
-  h_core_mat.print();
-  cout << "\n\n";
 
 
   arma::mat Pa=scf(h_core_mat);
   arma::mat Pa_tot=Pa.col(0)+Pa.col(0);
-  Pa_tot.print();
-  cout << "\n\n";
 
 
   arma::mat g_mat_a={{g_mat(1,0.5,1,gamma_AA,gamma_AB),g_mat_off(0.5,gamma_AB)},{g_mat_off(0.5,gamma_AB),g_mat(1,0.5,1,gamma_AA,gamma_AB)}};
-  g_mat_a.print();
-  cout << "\n\n";
 
 
   arma::mat result=g_mat_a+h_core_mat;
-  result.print();
-  cout << "\n\n";
 
 
   double v_nuc=scf_real_v_nuc(1,1,2,shell_arr,shell_arr_2);
-  cout << v_nuc;
-  cout << "\n\n";
+
 
 
   arma::mat g_mu_nu(2, 2,arma::fill::zeros);
