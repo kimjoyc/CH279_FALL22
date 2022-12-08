@@ -445,9 +445,10 @@ arma::mat g_mat2(arma::mat gmat,arma::mat pt,arma::mat gamma2_off,arma::mat gamm
 
 }
 
-arma::mat scf_real_density(int n_atoms,int p,int q,arma::mat h_mu_nu,arma::mat g_mu_nu,Shell **arr1,Shell**arr3,Shell**arr2)
+arma::mat scf_real_density(int n_atoms,int p,int q,double tot_eng,arma::mat h_mu_nu,arma::mat g_mu_nu,Shell**arr1,Shell**arr3,Shell**arr2)
 {
-  double energy_cdno2=-430.129944;
+
+  double energy_cdno2=tot_eng;
   double energy_cdno2_new;
   double energy_cdno2_init;
   double iteration=0;
@@ -468,29 +469,33 @@ arma::mat scf_real_density(int n_atoms,int p,int q,arma::mat h_mu_nu,arma::mat g
     eig_sym(ep_b,rho_mat_beta,fock_mat_b);
 
 
-    arma::mat P_a_new=rho_mat_alpha.cols(0,4)*rho_mat_alpha.cols(0,4).t();
-    arma::mat P_b_new=rho_mat_beta.cols(0,4)*rho_mat_beta.cols(0,4).t();
+    arma::mat P_a_new=rho_mat_alpha.cols(0,p-1)*rho_mat_alpha.cols(0,p-1).t();
+    arma::mat P_b_new=rho_mat_beta.cols(0,q-1)*rho_mat_beta.cols(0,q-1).t();
+
     arma::mat P_t=P_a_new+P_b_new;
 
+
+
     //gamma4
-    arma::mat gamma4(10,4,arma::fill::zeros);
+    arma::mat gamma4(p+q,n_atoms,arma::fill::zeros);
     create_gamma_diag(gamma4,arr3,arr1);
 
   //dynamic 
-    arma::mat pt(4,10,arma::fill::zeros);
+    arma::mat pt(n_atoms,p+q,arma::fill::zeros);
     pt=create_pt(pt,P_t,arr1,arr3);
 
-    arma::mat pt_(10,10,arma::fill::zeros);
+    arma::mat pt_(p+q,p+q,arma::fill::zeros);
     pt_=create_pt2(pt_,P_t,arr3);
 
-    arma::mat gamma_fun2(10,4,arma::fill::zeros);
+    arma::mat gamma_fun2(p+q,n_atoms,arma::fill::zeros);
     gamma_fun2=gamma_ptot_not_a2(gamma_fun2,pt,arr3,arr1);
 
-    arma::mat gmat_check_alpha(10,10,arma::fill::zeros);
+    arma::mat gmat_check_alpha(p+q,p+q,arma::fill::zeros);
     gmat_check_alpha=g_mat2(gmat_check_alpha,pt_,gamma_fun2,gamma4,P_a_new,arr2,arr3);
 
-    arma::mat gmat_check_beta(10,10,arma::fill::zeros);
+    arma::mat gmat_check_beta(p+q,p+q,arma::fill::zeros);
     gmat_check_beta=g_mat2(gmat_check_beta,pt_,gamma_fun2,gamma4,P_b_new,arr2,arr3);
+
 
     arma::mat G_a=gmat_check_alpha;
     arma::mat G_b=gmat_check_beta;
@@ -500,8 +505,12 @@ arma::mat scf_real_density(int n_atoms,int p,int q,arma::mat h_mu_nu,arma::mat g
   
 
     double V_nuc = scf_real_v_nuc(n_atoms,arr1);
-    double ptot0=arma::dot(P_t,hcore)/2;
-    double elec_eng0=0.5*(ep_a(0)+ep_a(1)+ep_a(2)+ep_a(3)+ep_a(4))+0.5*(ep_b(0)+ep_b(1)+ep_b(2)+ep_b(3),ep_b(4))+ptot0;
+
+      double elec_eng0=0.5*trace(P_a_new*(hcore+F_a))+0.5*trace(P_b_new*(hcore+F_b));
+
+
+
+
     energy_cdno2_init=elec_eng0+V_nuc;
 
 
@@ -512,10 +521,6 @@ arma::mat scf_real_density(int n_atoms,int p,int q,arma::mat h_mu_nu,arma::mat g
   while(abs(energy_cdno2-energy_cdno2_new)>=tol)
   {
 
-    // cout << "iteration :";
-    // cout << iteration++;
-    // cout << "\n\n";
-
     arma::vec ep_a_next;
     arma::mat rho_mat_alpha_next;
     eig_sym(ep_a_next,rho_mat_alpha_next,fock_mat_a_next);
@@ -525,46 +530,46 @@ arma::mat scf_real_density(int n_atoms,int p,int q,arma::mat h_mu_nu,arma::mat g
     eig_sym(ep_b_next,rho_mat_beta_next,fock_mat_b_next);
 
 
-    arma::mat P_a_new_next=rho_mat_alpha_next.cols(0,4)*rho_mat_alpha_next.cols(0,4).t();
-
-    arma::mat P_b_new_next=rho_mat_beta_next.cols(0,4)*rho_mat_beta_next.cols(0,4).t();
+    arma::mat P_a_new_next=rho_mat_alpha_next.cols(0,p-1)*rho_mat_alpha_next.cols(0,p-1).t();
+    arma::mat P_b_new_next=rho_mat_beta_next.cols(0,q-1)*rho_mat_beta_next.cols(0,q-1).t();
 
 
     arma::mat P_t_next=P_a_new_next+P_b_new_next;
 
-
-
+  
   //gamma4
-    arma::mat gamma4_next(10,4,arma::fill::zeros);
+    arma::mat gamma4_next(p+q,n_atoms,arma::fill::zeros);
     create_gamma_diag(gamma4_next,arr3,arr1);
 
-    arma::mat pt_next(4,10,arma::fill::zeros);
+    arma::mat pt_next(n_atoms,p+q,arma::fill::zeros);
     pt_next=create_pt(pt_next,P_t_next,arr1,arr3);
 
-    arma::mat nextpt_(10,10,arma::fill::zeros);
+    arma::mat nextpt_(p+q,p+q,arma::fill::zeros);
     nextpt_=create_pt2(nextpt_,P_t_next,arr3);
 
-    arma::mat gamma_fun2_next(10,4,arma::fill::zeros);
+    arma::mat gamma_fun2_next(p+q,n_atoms,arma::fill::zeros);
     gamma_fun2_next=gamma_ptot_not_a2(gamma_fun2_next,pt_next,arr3,arr1);
 
-    arma::mat gmat_check_alpha_next(10,10,arma::fill::zeros);
+    arma::mat gmat_check_alpha_next(p+q,p+q,arma::fill::zeros);
     gmat_check_alpha_next=g_mat2(gmat_check_alpha_next,nextpt_,gamma_fun2_next,gamma4_next,P_a_new_next,arr2,arr3);
 
-    arma::mat gmat_check_beta_next(10,10,arma::fill::zeros);
+    arma::mat gmat_check_beta_next(p+q,p+q,arma::fill::zeros);
     gmat_check_beta_next=g_mat2(gmat_check_beta_next,nextpt_,gamma_fun2_next,gamma4_next,P_b_new_next,arr2,arr3);
+
 
     arma::mat G_a_next=gmat_check_alpha_next;
     arma::mat G_b_next=gmat_check_beta_next;
 
     arma::mat F_a_next=h_mu_nu+G_a_next; 
-
     arma::mat F_b_next=h_mu_nu+G_b_next;
 
     double V_nuc_next=scf_real_v_nuc(n_atoms,arr1);
-    double ptot1=arma::dot(P_t_next,hcore)/2;
-    
-    double elec_eng1=0.5*(ep_a_next(0)+ep_a_next(1)+ep_a_next(2)+ep_a_next(3)+ep_a_next(4))+0.5*(ep_b_next(0)+ep_b_next(1)+ep_b_next(2)+ep_b_next(3)+ep_b_next(4))+ptot1;
+    double elec_eng1=0.5*trace(P_a_new_next*(hcore+F_a_next))+0.5*trace(P_b_new_next*(hcore+F_b_next));
+
+
     energy_cdno2_new=elec_eng1+V_nuc_next;
+
+
   
     //next iter2
     fock_mat_a_next=F_a_next;
@@ -581,132 +586,314 @@ arma::mat scf_real_density(int n_atoms,int p,int q,arma::mat h_mu_nu,arma::mat g
 }
 
 
-arma::mat scf_real_ptot(int n_atoms,int p,int q,arma::mat h_mu_nu,arma::mat g_mu_nu,Shell **arr1,Shell**arr3,Shell**arr2)
+
+
+double integral_ov_x(Shell &sh1, Shell & sh2)
 {
-  double energy_cdno2=-430.129944;
-  double energy_cdno2_new;
-  double energy_cdno2_init;
-  double iteration=0;
-  double tol=1e-4;
-  arma::mat P_tot;
 
-    //init cond
-    arma::mat hcore=h_mu_nu;
-    arma::mat fock_mat_a=h_mu_nu+g_mu_nu;
-    arma::mat fock_mat_b=h_mu_nu+g_mu_nu;
+  arma::vec la = sh1.get_l();
+  arma::vec lb = sh2.get_l();
 
-    arma::vec ep_a;
-    arma::mat rho_mat_alpha;
-    eig_sym(ep_a,rho_mat_alpha,fock_mat_a);
-  
-    arma::vec ep_b;
-    arma::mat rho_mat_beta;
-    eig_sym(ep_b,rho_mat_beta,fock_mat_b);
+  double alphaa = sh1.get_alpha(), alphab = sh2.get_alpha();
+
+  arma::vec Ra = sh1.get_R0();
+  arma::vec Rb = sh2.get_R0();
+
+  double overlap_int_x=Overlap_onedim(Ra(0), Rb(0), alphaa, alphab, la(0), lb(0));
+  return overlap_int_x;
+}
 
 
-    arma::mat P_a_new=rho_mat_alpha.cols(0,4)*rho_mat_alpha.cols(0,4).t();
-    arma::mat P_b_new=rho_mat_beta.cols(0,4)*rho_mat_beta.cols(0,4).t();
-    arma::mat P_t=P_a_new+P_b_new;
+double integral_ov_y(Shell &sh1, Shell & sh2)
+{
 
-    //gamma4
-    arma::mat gamma4(10,4,arma::fill::zeros);
-    create_gamma_diag(gamma4,arr3,arr1);
+  arma::vec la = sh1.get_l();
+  arma::vec lb = sh2.get_l();
 
-  //dynamic 
-    arma::mat pt(4,10,arma::fill::zeros);
-    pt=create_pt(pt,P_t,arr1,arr3);
+  double alphaa = sh1.get_alpha(), alphab = sh2.get_alpha();
 
-    arma::mat pt_(10,10,arma::fill::zeros);
-    pt_=create_pt2(pt_,P_t,arr3);
+  arma::vec Ra = sh1.get_R0();
+  arma::vec Rb = sh2.get_R0();
 
-    arma::mat gamma_fun2(10,4,arma::fill::zeros);
-    gamma_fun2=gamma_ptot_not_a2(gamma_fun2,pt,arr3,arr1);
+  double overlap_int_y=Overlap_onedim(Ra(1), Rb(1), alphaa, alphab, la(1), lb(1));
+  return overlap_int_y;
+}
 
-    arma::mat gmat_check_alpha(10,10,arma::fill::zeros);
-    gmat_check_alpha=g_mat2(gmat_check_alpha,pt_,gamma_fun2,gamma4,P_a_new,arr2,arr3);
+double integral_ov_z(Shell &sh1, Shell & sh2)
+{
 
-    arma::mat gmat_check_beta(10,10,arma::fill::zeros);
-    gmat_check_beta=g_mat2(gmat_check_beta,pt_,gamma_fun2,gamma4,P_b_new,arr2,arr3);
+  arma::vec la = sh1.get_l();
+  arma::vec lb = sh2.get_l();
 
-    arma::mat G_a=gmat_check_alpha;
-    arma::mat G_b=gmat_check_beta;
+  double alphaa = sh1.get_alpha(), alphab = sh2.get_alpha();
 
-    arma::mat F_a=h_mu_nu+G_a; 
-    arma::mat F_b=h_mu_nu+G_b;
-  
+  arma::vec Ra = sh1.get_R0();
+  arma::vec Rb = sh2.get_R0();
 
-    double V_nuc = scf_real_v_nuc(n_atoms,arr1);
-    double ptot0=arma::dot(P_t,hcore)/2;
-    double elec_eng0=0.5*(ep_a(0)+ep_a(1)+ep_a(2)+ep_a(3)+ep_a(4))+0.5*(ep_b(0)+ep_b(1)+ep_b(2)+ep_b(3),ep_b(4))+ptot0;
-    energy_cdno2_init=elec_eng0+V_nuc;
+  double overlap_int_z=Overlap_onedim(Ra(2), Rb(2), alphaa, alphab, la(2),lb(2));
+  return overlap_int_z;
+}
+
+double deriv_overlap_x(Shell &sh1, Shell &sh2)
+{
+    arma::vec la = sh1.get_l();
+    arma::vec lb = sh2.get_l();
+
+    double alphaa = sh1.get_alpha(), alphab = sh2.get_alpha();
+
+    arma::vec Ra = sh1.get_R0();
+    arma::vec Rb = sh2.get_R0();
 
 
-    //next iter
-    arma::mat fock_mat_a_next=F_a;
-    arma::mat fock_mat_b_next=F_b;
+    double overlap_x_der= (-la(0)*Overlap_onedim(Ra(0), Rb(0), alphaa, alphab, la(0)-1, lb(0)))+((2*alphaa)*
+    Overlap_onedim(Ra(0), Rb(0), alphaa, alphab, la(0)+1, lb(0)));
+    return overlap_x_der;
 
-  while(abs(energy_cdno2-energy_cdno2_new)>=tol)
+}
+
+
+double deriv_overlap_y(Shell &sh1, Shell &sh2)
+{
+    arma::vec la = sh1.get_l();
+    arma::vec lb = sh2.get_l();
+
+    double alphaa = sh1.get_alpha(), alphab = sh2.get_alpha();
+    arma::vec Ra = sh1.get_R0();
+    arma::vec Rb = sh2.get_R0();
+
+
+    double overlap_y_der= -la(1)*Overlap_onedim(Ra(1), Rb(1), alphaa, alphab, la(1)-1, lb(1))+((2*alphaa)*
+    Overlap_onedim(Ra(1), Rb(1), alphaa, alphab, la(1)+1, lb(1)));
+
+    return overlap_y_der;
+}
+
+double deriv_overlap_z(Shell &sh1, Shell &sh2)
+{
+    arma::vec la = sh1.get_l();
+    arma::vec lb = sh2.get_l();
+
+    double alphaa = sh1.get_alpha(), alphab = sh2.get_alpha();
+    arma::vec Ra = sh1.get_R0();
+    arma::vec Rb = sh2.get_R0();
+
+    double overlap_z_der= -la(2)*Overlap_onedim(Ra(2), Rb(2), alphaa, alphab, la(2)-1, lb(2))+((2*alphaa)*
+    Overlap_onedim(Ra(2), Rb(2), alphaa, alphab, la(2)+1, lb(2)));
+
+    return overlap_z_der;
+
+}
+
+
+
+
+//y_a_b gradient for gamma summation matrix offdiag
+void y_a_b_off_diag(arma::mat &y_a_b_off_diag,arma::mat pmat_alpha,arma::mat pmat_beta,Shell** arr1)
+{
+  double row_number=size(y_a_b_off_diag)[0];
+  double col_number=size(y_a_b_off_diag)[1];
+  for (int i = 0; i < row_number; i++) 
   {
-
-    // cout << "iteration :";
-    // cout << iteration++;
-    // cout << "\n\n";
-
-    arma::vec ep_a_next;
-    arma::mat rho_mat_alpha_next;
-    eig_sym(ep_a_next,rho_mat_alpha_next,fock_mat_a_next);
-
-    arma::vec ep_b_next;
-    arma::mat rho_mat_beta_next;
-    eig_sym(ep_b_next,rho_mat_beta_next,fock_mat_b_next);
+    for (int j = 0; j < col_number; j++) 
+    {
+      y_a_b_off_diag(i,j)=pmat_alpha(i,j)*pmat_alpha(i,j)+pmat_beta(i,j)*pmat_beta(i,j);
+    }
 
 
-    arma::mat P_a_new_next=rho_mat_alpha_next.cols(0,4)*rho_mat_alpha_next.cols(0,4).t();
-    arma::mat P_b_new_next=rho_mat_beta_next.cols(0,4)*rho_mat_beta_next.cols(0,4).t();
-    arma::mat P_t_next=P_a_new_next+P_b_new_next;
+  }
+}
 
-  //gamma4
-    arma::mat gamma4_next(10,4,arma::fill::zeros);
-    create_gamma_diag(gamma4_next,arr3,arr1);
 
-    arma::mat pt_next(4,10,arma::fill::zeros);
-    pt_next=create_pt(pt_next,P_t_next,arr1,arr3);
 
-    arma::mat nextpt_(10,10,arma::fill::zeros);
-    nextpt_=create_pt2(nextpt_,P_t_next,arr3);
 
-    arma::mat gamma_fun2_next(10,4,arma::fill::zeros);
-    gamma_fun2_next=gamma_ptot_not_a2(gamma_fun2_next,pt_next,arr3,arr1);
+//y_a_b gradient for gamma
+void y_a_b_(arma::mat &y_a_b,arma::mat p_tot,arma::mat pmat,arma::mat pmat_off_diag,Shell** arr1)
+{
+  double row_number=size(y_a_b)[0];
+  double col_number=size(y_a_b)[1];
+  for (int i = 0; i < row_number; i++) 
+  {
+    for (int j = 0; j < col_number; j++) 
+    {
+      if(i==j)
+      {
+        y_a_b(i,j)=0;
+      }
 
-    arma::mat gmat_check_alpha_next(10,10,arma::fill::zeros);
-    gmat_check_alpha_next=g_mat2(gmat_check_alpha_next,nextpt_,gamma_fun2_next,gamma4_next,P_a_new_next,arr2,arr3);
+      else
+      {
+        y_a_b(i,j)=sum(p_tot.row(i))*sum(p_tot.row(j))-arr1[i][0].get_elem_num()*sum(p_tot.row(j))-arr1[j][0].get_elem_num()*sum(p_tot.row(i));
 
-    arma::mat gmat_check_beta_next(10,10,arma::fill::zeros);
-    gmat_check_beta_next=g_mat2(gmat_check_beta_next,nextpt_,gamma_fun2_next,gamma4_next,P_b_new_next,arr2,arr3);
 
-    arma::mat G_a_next=gmat_check_alpha_next;
-    arma::mat G_b_next=gmat_check_beta_next;
+      }
+      // -pmat_off_diag(i,j);
 
-    arma::mat F_a_next=h_mu_nu+G_a_next; 
-
-    arma::mat F_b_next=h_mu_nu+G_b_next;
-
-    double V_nuc_next=scf_real_v_nuc(n_atoms,arr1);
-    double ptot1=arma::dot(P_t_next,hcore)/2;
-    
-    double elec_eng1=0.5*(ep_a_next(0)+ep_a_next(1)+ep_a_next(2)+ep_a_next(3)+ep_a_next(4))+0.5*(ep_b_next(0)+ep_b_next(1)+ep_b_next(2)+ep_b_next(3)+ep_b_next(4))+ptot1;
-    energy_cdno2_new=elec_eng1+V_nuc_next;
-  
-    //next iter2
-    fock_mat_a_next=F_a_next;
-    fock_mat_b_next=F_b_next;
-
-    P_tot=P_t_next;
+    }
 
   }
 
+}
 
-  return P_tot;
 
+//y_a_b gradient for gamma
+void y_a_b(arma::mat &y_a_b,arma::mat p_tot,arma::mat pmat,arma::mat pmat_off_diag,Shell** arr1)
+{
+  double row_number=size(y_a_b)[0];
+  double col_number=size(y_a_b)[1];
+  for (int i = 0; i < row_number; i++) 
+  {
+    for (int j = 0; j < col_number; j++) 
+    {
+      if(i!=j)
+      {
+        y_a_b(i,j)=sum(p_tot.row(i))*sum(p_tot.row(j))-arr1[i][0].get_elem_num()*sum(p_tot.row(j))-arr1[j][0].get_elem_num()*sum(p_tot.row(i))-pmat_off_diag(i,j);
+      }
+
+      else{
+        y_a_b(i,j)=0;
+      }
+
+    }
+
+  }
 
 }
+
+
+
+//y_a_b gradient for gamma * gamma_x
+void y_a_bx_gamma(arma::mat &y_a_b_gamma,arma::mat gamma,arma::mat yab)
+{
+  double row_number=size(y_a_b_gamma)[0];
+  double col_number=size(y_a_b_gamma)[1];
+  for (int i = 0; i < row_number; i++) 
+  {
+    for (int j = 0; j < col_number; j++) 
+    {
+      y_a_b_gamma(i,j)=gamma(i,j)*yab(i,j);
+      
+    }
+
+  }
+
+}
+
+
+//gradient of x_mu_nu
+void x_mu_nu(arma::mat &x_mu_nu,arma::mat pmat,Shell** arr1)
+{
+  double row_number=size(x_mu_nu)[0];
+  double col_number=size(x_mu_nu)[1];
+  for (int i = 0; i < row_number; i++) 
+  {
+    for (int j = 0; j < col_number; j++) 
+    {
+      if(i!=j)
+      {
+        x_mu_nu(i,j)=pmat(i,j)*(arr1[i][0].get_beta()+arr1[j][0].get_beta());
+
+
+      }
+
+      else
+      {
+        x_mu_nu(i,j)=0;
+
+      }
+
+    }
+
+  }
+
+}
+
+
+//xmu gradient for gamma summation matrix offdiag
+void x_mu_ov_(arma::mat &y_a_b_off_diag,arma::mat x_mu_nu,arma::mat overlap,Shell** arr1)
+{
+  double row_number=size(y_a_b_off_diag)[0];
+  double col_number=size(y_a_b_off_diag)[1];
+  for (int i = 0; i < row_number; i++) 
+  {
+    for (int j = 0; j < col_number; j++) 
+    {
+      if((arr1[i][0].get_elem_num()==arr1[j][0].get_elem_num())&&(arr1[i][0].get_R0()[0]==arr1[j][0].get_R0()[0]))
+      {
+        y_a_b_off_diag(i,j)=0;
+
+      }
+
+
+      else
+      {
+        y_a_b_off_diag(i,j)=overlap(i,j);
+
+      }
+
+
+
+
+    }
+
+  }
+}
+
+
+//xmu gradient for gamma summation matrix offdiag
+void x_mu_ov(arma::mat &y_a_b_off_diag,arma::mat x_mu_nu,arma::mat overlap,Shell** arr1)
+{
+  double row_number=size(y_a_b_off_diag)[0];
+  double col_number=size(y_a_b_off_diag)[1];
+  for (int i = 0; i < row_number; i++) 
+  {
+    for (int j = 0; j < col_number; j++) 
+    {
+      if((arr1[i][0].get_elem_num()==arr1[j][0].get_elem_num())&&(arr1[i][0].get_R0()[0]==arr1[j][0].get_R0()[0]))
+      {
+        y_a_b_off_diag(i,j)=0;
+
+      }
+
+
+      else
+      {
+        y_a_b_off_diag(i,j)=x_mu_nu(i,j)*overlap(i,j);
+
+      }
+
+
+    }
+
+  }
+}
+
+
+//pt so that can actually iterate 
+void xmu_sum_4(arma::mat&pt, arma::mat pt_tot,Shell**arr1,Shell**arr2,Shell**arr3)
+{
+    double row_number=size(pt)[0];
+    double col_number= size(pt)[1];
+    for (int i = 0; i < row_number; i++) 
+    {
+        for (int j = 0; j < col_number; j++) 
+        {
+          if((arr1[i][0].get_elem_num()==arr2[j][0].get_elem_num())&&(arr1[i][0].get_R0()[0]==arr2[j][0].get_R0()[0]))
+          {
+            pt(i,j)=sum(pt_tot.row(j));
+          }
+          else
+          {
+            pt(i,j)=0;
+          }
+
+
+        }
+
+    }
+
+}
+
+
+
+
+

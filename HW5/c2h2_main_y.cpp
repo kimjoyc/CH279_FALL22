@@ -12,7 +12,7 @@
 #include <armadillo>
 #include <stdio.h>
 using namespace std;
-#include "hw5_fun.cpp"
+#include "hw5_fun_y.cpp"
 
 int main(int argc, char* argv[])
 {
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 //ov - x 
   arma::mat overlap_x(10,10,arma::fill::zeros);
   Shell* arr2[10]={shell_arr,shell_arr_3,shell_arr_4,shell_arr_5,shell_arr_6,shell_arr_7,shell_arr_8,shell_arr_9,shell_arr_10,shell_arr_2};
-  create_ov_mat_x(overlap_x,arr2);
+  create_ov_mat_y(overlap_x,arr2);
   overlap_x.print();
   cout << "\n\n";
 
@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
 
 //gamma -x
   arma::mat gamma_x(4, 4,arma::fill::zeros);
-  create_gamma_mat_x(gamma_x,arr1);
+  create_gamma_mat_y(gamma_x,arr1);
   gamma_x.print();
   cout << "\n\n";
 
@@ -108,8 +108,6 @@ int main(int argc, char* argv[])
 //gamma4
   arma::mat gamma4(10,4,arma::fill::zeros);
   create_gamma_diag(gamma4,arr3,arr1);
-
-
 //hmat
   arma::mat hmat(10,10,arma::fill::zeros);
   create_h_core_mat(hmat,gamma3,gamma4,arr2);
@@ -117,19 +115,18 @@ int main(int argc, char* argv[])
   cout << "\n\n";
 
 
+
+
   arma::mat g_mu_nu_(10,10,arma::fill::zeros);
-  arma::mat P_a_new = scf_real_density(4,5,5,hmat,g_mu_nu_,arr1,arr3,arr2);
+  arma::mat P_a_new = scf_real_density(4,5,5,-430.129966,hmat,g_mu_nu_,arr1,arr3,arr2);
   cout << P_a_new;
   cout << "\n\n";
 
-  arma::mat P_b_new = scf_real_density(4,5,5,hmat,g_mu_nu_,arr1,arr3,arr2);
+  arma::mat P_b_new = scf_real_density(4,5,5,-430.129966,hmat,g_mu_nu_,arr1,arr3,arr2);
   cout << P_b_new;
   cout << "\n\n";
 
-  arma::mat g_mu_nu(10,10,arma::fill::zeros);
-  arma::mat p_tot = scf_real_ptot(4,5,5,hmat,g_mu_nu,arr1,arr3,arr2);
-  cout << p_tot;
-  cout << "\n\n";
+  arma::mat p_tot = P_a_new+P_b_new;
 
   arma::mat pt(4,10,arma::fill::zeros);
   pt=create_pt(pt,p_tot,arr1,arr3);
@@ -154,7 +151,7 @@ int main(int argc, char* argv[])
   cout << "\n\n";
 
   arma::mat vnucx(4,4,arma::fill::zeros);
-  v_nuc_x(vnucx,arr1);
+  v_nuc_y(vnucx,arr1);
   vnucx.print();
   cout << "\n\n";
 
@@ -237,7 +234,7 @@ sum_yab.print();
 
 // void x_mu_nu(arma::mat &x_mu_nu,arma::mat pmat,Shell** arr1)
     arma::mat xmu(10,10,arma::fill::zeros);
-    x_mu_nu(xmu,P_a_new,arr2);
+    x_mu_nu(xmu,p_tot,arr2);
     xmu.print();
     cout << "\n\n";
 
@@ -247,15 +244,15 @@ sum_yab.print();
     x_mu_ov_(xmu_fix_,xmu,overlap_x,arr2);
     xmu_fix_.print();
     cout << "\n\n";
-    // cout << sum(xmu_fix_.row(0));
-    // cout << "\n\n";
+
  
 // void x_mu(arma::mat &y_a_b_off_diag,arma::mat pmat,arma::mat x_mu_nu,arma::mat overlap,Shell** arr1)
     arma::mat xmu_fix(10,10,arma::fill::zeros);
     x_mu_ov(xmu_fix,xmu,overlap_x,arr2);
     xmu_fix.print();
     cout << "\n\n";
-    cout << sum(xmu_fix.row(1));
+
+    cout<<sum(xmu_fix.row(0));
     cout << "\n\n";
 
 
@@ -274,6 +271,23 @@ sum_yab.print();
     cout << "\n\n";
     cout << sum(xsum4.row(3));
     cout << "\n\n";
+
+
+
+  arma::mat vnuc_grad={sum(vnucx.row(0)), sum(vnucx.row(1)), sum(vnucx.row(2)), sum(vnucx.row(3))};
+  vnuc_grad.print();
+  cout << "\n\n"; 
+
+  arma::mat elec_grad={sum(yab_gamma.row(0))+sum(xsum4.row(0)),sum(yab_gamma.row(1))+sum(xsum4.row(1)),sum(yab_gamma.row(2))+sum(xsum4.row(2)),sum(yab_gamma.row(3))+sum(xsum4.row(3))};
+  elec_grad.print();
+  cout << "\n\n";
+
+
+
+
+
+    cout << elec_grad+vnuc_grad;
+        cout << "\n\n";
 
 
 
