@@ -404,7 +404,12 @@ double scf_real_v_nuc(double n_atom, Shell** arr1)
       arma::vec r_ab=Ra-Rb;    
       arma::vec r_ab_=pow(r_ab,2);
       double R_ab_dist=sqrt(r_ab_(0)+r_ab_(1)+r_ab_(2));
+      // cout << R_ab_dist;
+      // cout << "\n\n";
+
       V_nuc+=(arr1[i][0].get_elem_num()*arr1[j][0].get_elem_num())/R_ab_dist;
+      // cout << V_nuc;
+      // cout << "\n\n";
 
     }
 
@@ -470,6 +475,7 @@ arma::mat scf_real_density(int n_atoms,int p,int q,double tot_eng,arma::mat h_mu
 
 
     arma::mat P_a_new=rho_mat_alpha.cols(0,p-1)*rho_mat_alpha.cols(0,p-1).t();
+
     arma::mat P_b_new=rho_mat_beta.cols(0,q-1)*rho_mat_beta.cols(0,q-1).t();
 
     arma::mat P_t=P_a_new+P_b_new;
@@ -506,9 +512,7 @@ arma::mat scf_real_density(int n_atoms,int p,int q,double tot_eng,arma::mat h_mu
 
     double V_nuc = scf_real_v_nuc(n_atoms,arr1);
 
-      double elec_eng0=0.5*trace(P_a_new*(hcore+F_a))+0.5*trace(P_b_new*(hcore+F_b));
-
-
+    double elec_eng0=0.5*trace(P_a_new*(hcore+F_a))+0.5*trace(P_b_new*(hcore+F_b));
 
 
     energy_cdno2_init=elec_eng0+V_nuc;
@@ -520,6 +524,9 @@ arma::mat scf_real_density(int n_atoms,int p,int q,double tot_eng,arma::mat h_mu
 
   while(abs(energy_cdno2-energy_cdno2_new)>=tol)
   {
+    cout << "iteration :";
+    cout << iteration++;
+    cout << "\n\n";
 
     arma::vec ep_a_next;
     arma::mat rho_mat_alpha_next;
@@ -528,6 +535,8 @@ arma::mat scf_real_density(int n_atoms,int p,int q,double tot_eng,arma::mat h_mu
     arma::vec ep_b_next;
     arma::mat rho_mat_beta_next;
     eig_sym(ep_b_next,rho_mat_beta_next,fock_mat_b_next);
+
+
 
 
     arma::mat P_a_new_next=rho_mat_alpha_next.cols(0,p-1)*rho_mat_alpha_next.cols(0,p-1).t();
@@ -564,8 +573,8 @@ arma::mat scf_real_density(int n_atoms,int p,int q,double tot_eng,arma::mat h_mu
     arma::mat F_b_next=h_mu_nu+G_b_next;
 
     double V_nuc_next=scf_real_v_nuc(n_atoms,arr1);
+    
     double elec_eng1=0.5*trace(P_a_new_next*(hcore+F_a_next))+0.5*trace(P_b_new_next*(hcore+F_b_next));
-
 
     energy_cdno2_new=elec_eng1+V_nuc_next;
 
