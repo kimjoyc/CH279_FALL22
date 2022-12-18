@@ -12,7 +12,7 @@
 #include <armadillo>
 #include <stdio.h>
 using namespace std;
-#include "new3.cpp"
+#include "odd_scf.cpp"
 
 
 
