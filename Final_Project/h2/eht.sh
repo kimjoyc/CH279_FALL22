@@ -1,7 +1,9 @@
+# g++ eht_2.cpp ../util.cpp -o eht_2 -O2 -larmadillo -llapack -lblas
+# ./eht_2 H1 H2
+
+
 g++ eht_2.cpp ../util.cpp -o eht_2 -O2 -larmadillo -llapack -lblas
-./eht_2 H1 H2
+./eht_2 H1 H3
 
 
-# g++ eht.cpp util.cpp -o eht -O2 -larmadillo -llapack -lblas
-# ./eht H1 H2
 

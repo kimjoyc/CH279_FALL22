@@ -205,7 +205,6 @@ void create_ov_mat(arma::mat &overlap, Shell** arr1)
     {
         for (int j = 0; j < col_number; j++) 
         {
-
           overlap(i,j)=sum_func_opt(arr1[i],arr1[j]);
 
         }
@@ -214,6 +213,30 @@ void create_ov_mat(arma::mat &overlap, Shell** arr1)
 }
 
 
+void create_ov_mat_2(arma::mat &overlap, Shell** arr1)
+{
+    double row_number=size(overlap)[0];
+    double col_number= size(overlap)[1];
+    for (int i = 0; i < row_number; i++) 
+    {
+        for (int j = 0; j < col_number; j++) 
+        {
+          if(i==j)
+          {
+            overlap(i,j)=sum_func_opt(arr1[i],arr1[j]);
+
+          }
+
+          else
+          {
+            overlap(i,j)=0;
+          }
+
+
+        }
+    }
+
+}
 
 void create_ov_mat_offdiag(arma::mat &overlap, Shell** arr1)
 {
@@ -241,6 +264,8 @@ void create_ov_mat_offdiag(arma::mat &overlap, Shell** arr1)
 
 }
 
+//orthoganal scheme delta_ab off diagonals zero for s matrix 
+//convert atomic units R_ab to angstroms from atomic untis to angtroms !
 void create_u_mu(arma::mat &overlap,Shell** arr1)
 {
     double row_number=size(overlap)[0];
@@ -345,18 +370,19 @@ double h_mu_nu_calc(arma::mat U_mu,arma::mat delta_mu_nu)
   return H_mu_nu=dot(U_mu,delta_mu_nu);
 
 }
-//organize by bond type and then filter by orbital pairs
-double h_mu_nu_calc_correction(double H_mu_nu,double beta_mu_nu, double R_ab, double a_o, double lambda_mu_nu)
+//dont correct R_ab b/c cancel out
+double h_mu_nu_calc_correction(double H_mu_nu,double beta_mu_nu,double R_ab,double a_o,double lambda_mu_nu)
 {
+  // R_ab=R_ab*0.52917;
   double param=-lambda_mu_nu*pow(R_ab,2)/pow(a_o,2);
   return H_mu_nu+=beta_mu_nu*sqrt(R_ab/a_o)*exp(param);
   // return H_mu_nu-=beta_mu_nu*sqrt(R_ab/a_o)*exp(param);
-
 }
 
 //G_ab
 double gamma_ab(double gamma_ab_, double alpha_ab, double R_ab, double omega_ab,double r_ab)
 {
+  R_ab=R_ab*0.52917;
   double G_ab=gamma_ab_*exp(-alpha_ab*R_ab)+omega_ab*exp(-6*pow(R_ab-r_ab,2));
   return G_ab;
 }
@@ -382,8 +408,9 @@ double rep_energy(double n_atom, Shell** arr1)
       arma::vec r_ab_2=Ra-Rb;    
       arma::vec r_ab_3=pow(r_ab_2,2);
       double R_ab_dist=sqrt(r_ab_3(0)+r_ab_3(1)+r_ab_3(2));
-      R_ab=R_ab_dist;
 
+      R_ab=R_ab_dist;
+      R_ab=R_ab*0.52917;
       rep_eng+=gamma_ab(gamma_ab_,alpha_ab,R_ab,omega_ab,r_ab);
 
     }
@@ -403,20 +430,12 @@ double sum_eng(arma::vec epsilon,int n_atoms,Shell**arr1)
   return energy;
 }
 
-
-double Solve_EH(arma::mat &OV_mat,arma::mat &H_mat, arma::mat &C_mat, arma::vec &energy_vec, int num_ele,Shell**arr1)
+//dont need eigsyms for setup
+double Solve_EH(arma::mat &H_mat, int num_ele,Shell**arr1)
 {
   arma::mat U;
-  arma::vec S_eigenvalue;
-  arma::eig_sym(S_eigenvalue, U, OV_mat);
-  arma::mat S_invsqrt = arma::inv( arma::diagmat( arma::sqrt(S_eigenvalue)) );
-  arma::mat X_mat = U * S_invsqrt * U.t();
-
-  arma::mat H_new = X_mat.t() * H_mat * X_mat;
-  
-  arma::mat V;
-  arma::eig_sym(energy_vec, V, H_new);
-  C_mat = X_mat * V;
+  arma::vec energy_vec;
+  arma::eig_sym(energy_vec, U, H_mat);
 
   if(num_ele % 2 == 1){
     printf("Warn:: this job is unrestricted");
@@ -438,6 +457,7 @@ double Solve_EH(arma::mat &OV_mat,arma::mat &H_mat, arma::mat &C_mat, arma::vec 
 
 }
 
+
 double eng_isolated_atom_A(double n_s_orb,double U_s_orb,double n_p_orb, double U_p_orb)
 {
   double eng_iso=n_s_orb*U_s_orb+n_p_orb*U_p_orb;
@@ -454,8 +474,6 @@ double eng_iso_atoms(int n_atoms,Shell **arr1)
   return eng_iso_acc*23.0609;
 
 }
-
-
 double sum_heat_of_form(int n_atoms,Shell **arr1)
 {
   double eng_orb_heat=0;
@@ -470,8 +488,6 @@ double heat_of_form(double total_eng,double isolated_atom_eng,double heat_of_for
 {
   return total_eng-isolated_atom_eng+heat_of_form_sum;
 }
-
-
 
 //create a for loop to iterate through valence electron add in class
 void create_hmunu(arma::mat &overlap,Shell** arr1)
@@ -678,7 +694,7 @@ void create_hmunu(arma::mat &overlap,Shell** arr1)
   }
 }
 
-void create_hmunu2(arma::mat &overlap,Shell** arr1)
+void create_hmunu2(arma::mat &overlap,arma::mat ov,Shell** arr1)
 {
   double row_number=size(overlap)[0];
   double col_number= size(overlap)[1];
@@ -692,19 +708,19 @@ void create_hmunu2(arma::mat &overlap,Shell** arr1)
 
         if(arr1[i][0].get_elem_num()==1)
         {
-          overlap(i,j)=-13.605;
+          overlap(i,j)=-13.605*ov(i,j);
         }
 
         if(arr1[i][0].get_elem_num()==4)
         {
           if(arr1[i][0].get_l()[0]==0&&arr1[i][0].get_l()[1]==0&&arr1[i][0].get_l()[2]==0)
           {
-            overlap(i,j)=-21.559;
+            overlap(i,j)=-21.559*ov(i,j);
           }
 
           else
           {
-            overlap(i,j)=-13.507;
+            overlap(i,j)=-13.507*ov(i,j);
           }
 
         }
@@ -736,11 +752,14 @@ void create_hmunu2(arma::mat &overlap,Shell** arr1)
 
         if((arr1[i][0].get_elem_num()==1&&arr1[j][0].get_elem_num()==1)||(arr1[j][0].get_elem_num()==1&&arr1[i][0].get_elem_num()==1))
         {
-          h_mu_nu=-13.605;
+          h_mu_nu=-13.605*ov(i,j);
+
           lambda_ss=0.280;
           beta_ss=-4.442;
+
           ra=arr1[i][0].get_R0();
           rb=arr1[j][0].get_R0();
+
           R_ab=ra-rb;          
           r_ab_sqrd=pow(R_ab,2);
           r_ab_dist=sqrt(r_ab_sqrd[0]+r_ab_sqrd[1]+r_ab_sqrd[2]);
@@ -757,6 +776,8 @@ void create_hmunu2(arma::mat &overlap,Shell** arr1)
           (arr1[j][0].get_l()[0]==0&&arr1[j][0].get_l()[1]==0&&arr1[j][0].get_l()[2]==0)
           &&(arr1[i][0].get_l()[0]==0&&arr1[i][0].get_l()[1]==0&&arr1[i][0].get_l()[2]==0))
           {
+            // h_mu_nu=-13.605*ov(i,j);
+
               
             lambda_ss=0.275;
             beta_ss=-8.574;
@@ -888,45 +909,50 @@ int main(int argc, char* argv[])
   //ov 
   arma::mat overlap(2,2,arma::fill::zeros);
   Shell* arr1[2]={shell_arr,shell_arr_2};
-
   create_ov_mat(overlap,arr1);
   overlap.print();
-  arma::mat OV_mat=overlap;
+  cout << "\n\n";
+
+  arma::mat overlap_2(2,2,arma::fill::zeros);
+  create_ov_mat_2(overlap_2,arr1);
+  overlap_2.print();
+  cout << "\n\n";
+  arma::mat OV_mat=overlap_2;
   cout << "\n\n";
 
   arma::mat u_mu(2,2,arma::fill::zeros);
   create_u_mu(u_mu,arr1);
-  u_mu.print();
-  cout << "\n\n";
+  // u_mu.print();
+  // cout << "\n\n";
 
   arma::mat overlap_off(2,2,arma::fill::zeros);
   create_ov_mat_offdiag(overlap_off,arr1);
-  overlap_off.print();
-  cout << "\n\n";
+  // overlap_off.print();
+  // cout << "\n\n";
 
 
   // hmunu
   arma::mat hmat(2,2,arma::fill::zeros);
-  create_hmunu2(hmat,arr1);
+  create_hmunu2(hmat,OV_mat,arr1);
   hmat.print();
   arma::mat H_mat=hmat;
   cout << "\n\n";
 
 
-  arma::mat C_mat(2, 2);
-  arma::vec energy_vec(2);
-
-  double Energy=Solve_EH(OV_mat, H_mat, C_mat, energy_vec,2,arr1);
+  double Energy=Solve_EH(H_mat,2,arr1);
+  cout << "Total energy solved from Hmatrix: ";
   cout << Energy;
   cout << "\n\n";
   
   double total_eng=Energy;
 
   double isolated_atom_eng=eng_iso_atoms(2,arr1);
+  cout << "isolated energy atoms sum: ";
   cout << isolated_atom_eng;
   cout << "\n\n";
 
   double heat_of_form_sum=sum_heat_of_form(2,arr1);
+  cout << "sum heat of formations for each atom: ";
   cout << heat_of_form_sum;
   cout << "\n\n";
 
