@@ -15,7 +15,7 @@ code for accuracy of structures and relative energies.
 #include <math.h>
 #include <sstream>
 #include <cassert>
-#include "../util.h"
+#include "../../util.h"
 #include <stdlib.h>
 #include <stdexcept>
 #include <armadillo>
@@ -329,7 +329,6 @@ arma::vec get_g_params(Shell &sh1,Shell &sh2)
 //dont correct R_ab b/c cancel out
 double h_mu_nu_calc_correction(double H_mu_nu,double beta_mu_nu,double R_ab,double a_o,double lambda_mu_nu)
 {
-  R_ab=R_ab*0.52917;
   
   double param=-lambda_mu_nu*pow(R_ab,2)/pow(a_o,2);
   return H_mu_nu+=beta_mu_nu*sqrt(R_ab/a_o)*exp(param);
@@ -340,11 +339,7 @@ double h_mu_nu_calc_correction(double H_mu_nu,double beta_mu_nu,double R_ab,doub
 double gamma_ab(double gamma_ab_, double alpha_ab, double R_ab, double omega_ab,double r_ab)
 {
   
-  R_ab=R_ab*0.52917;
   double G_ab_1=gamma_ab_*exp(-alpha_ab*R_ab);
-
-  // R_ab=R_ab/0.52917;
-  // r_ab=r_ab/0.52917;
 
   double G_ab_2=omega_ab*exp(-6*pow(R_ab-r_ab,2));
 

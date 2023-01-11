@@ -15,7 +15,7 @@ code for accuracy of structures and relative energies.
 #include <math.h>
 #include <sstream>
 #include <cassert>
-#include "../util.h"
+#include "../../util.h"
 #include <stdlib.h>
 #include <stdexcept>
 #include <armadillo>
@@ -329,7 +329,6 @@ arma::vec get_g_params(Shell &sh1,Shell &sh2)
 //dont correct R_ab b/c cancel out
 double h_mu_nu_calc_correction(double H_mu_nu,double beta_mu_nu,double R_ab,double a_o,double lambda_mu_nu)
 {
-  R_ab=R_ab*0.52917;
   
   double param=-lambda_mu_nu*pow(R_ab,2)/pow(a_o,2);
   return H_mu_nu+=beta_mu_nu*sqrt(R_ab/a_o)*exp(param);
@@ -340,11 +339,7 @@ double h_mu_nu_calc_correction(double H_mu_nu,double beta_mu_nu,double R_ab,doub
 double gamma_ab(double gamma_ab_, double alpha_ab, double R_ab, double omega_ab,double r_ab)
 {
   
-  R_ab=R_ab*0.52917;
   double G_ab_1=gamma_ab_*exp(-alpha_ab*R_ab);
-
-  // R_ab=R_ab/0.52917;
-  // r_ab=r_ab/0.52917;
 
   double G_ab_2=omega_ab*exp(-6*pow(R_ab-r_ab,2));
 
@@ -518,10 +513,8 @@ void create_hmunu2(arma::mat &overlap,arma::mat ov,Shell** arr1)
           r_ab_sqrd=pow(R_ab,2);
           r_ab_dist=sqrt(r_ab_sqrd[0]+r_ab_sqrd[1]+r_ab_sqrd[2]);
 
-          cout << r_ab_dist;
-          cout << "\n\n";
 
-          overlap(i,j)+=h_mu_nu_calc_correction(h_mu_nu,beta_ss,r_ab_dist,a0,lambda_ss);
+          overlap(i,j)=h_mu_nu_calc_correction(h_mu_nu,beta_ss,r_ab_dist,a0,lambda_ss);
         }
 
 
@@ -534,7 +527,6 @@ void create_hmunu2(arma::mat &overlap,arma::mat ov,Shell** arr1)
           (arr1[j][0].get_l()[0]==0&&arr1[j][0].get_l()[1]==0&&arr1[j][0].get_l()[2]==0)
           &&(arr1[i][0].get_l()[0]==0&&arr1[i][0].get_l()[1]==0&&arr1[i][0].get_l()[2]==0))
           {
-            // h_mu_nu=-13.605*ov(i,j);
 
               
             lambda_ss=0.275;
@@ -651,21 +643,97 @@ void create_hmunu2(arma::mat &overlap,arma::mat ov,Shell** arr1)
 
 int main(int argc, char* argv[])
 {
-
-  //H1 
+  //C1-2s
   Shell sh1,sh2,sh3;
   string fname_1=argv[1];
   ReadShellparameter(sh1,sh2,sh3,fname_1);
-  Shell shell_arr[3]={sh1,sh2,sh3};
-  
-  //H3
+  Shell shell_arr_1[3]={sh1,sh2,sh3};
+
+  //C2-2s
   Shell sh4,sh5,sh6;
   string fname_2=argv[2];
   ReadShellparameter(sh4,sh5,sh6,fname_2);
   Shell shell_arr_2[3]={sh4,sh5,sh6};
 
-  Shell* arr1[2]={shell_arr,shell_arr_2};
-  arma::mat overlap_2(2,2,arma::fill::zeros);
+  //H3
+  Shell sh7,sh8,sh9;
+  string fname_3=argv[3];
+  ReadShellparameter(sh7,sh8,sh9,fname_3);
+  Shell shell_arr_3[3]={sh7,sh8,sh9};
+  
+  //H4
+  Shell sh10,sh11,sh12;
+  string fname_4=argv[4];
+  ReadShellparameter(sh10,sh11,sh12,fname_4);
+  Shell shell_arr_4[3]={sh10,sh11,sh12};
+
+  //H5
+  Shell sh13,sh14,sh15;
+  string fname_5=argv[5];
+  ReadShellparameter(sh13,sh14,sh15,fname_5);
+  Shell shell_arr_5[3]={sh13,sh14,sh15};
+
+  //H6
+  Shell sh16,sh17,sh18;
+  string fname_6=argv[6];
+  ReadShellparameter(sh16,sh17,sh18,fname_6);
+  Shell shell_arr_6[3]={sh16,sh17,sh18};
+
+  //H7
+  Shell sh19,sh20,sh21;
+  string fname_7=argv[7];
+  ReadShellparameter(sh19,sh20,sh21,fname_7);
+  Shell shell_arr_7[3]={sh19,sh20,sh21};
+
+  //H8
+  Shell sh22,sh23,sh24;
+  string fname_8=argv[8];
+  ReadShellparameter(sh22,sh23,sh24,fname_8);
+  Shell shell_arr_8[3]={sh22,sh23,sh24};
+
+
+  //C1-2px
+  Shell sh25,sh26,sh27;
+  string fname_9=argv[9];
+  ReadShellparameter(sh25,sh26,sh27,fname_9);
+  Shell shell_arr_9[3]={sh25,sh26,sh27};
+
+  //C1-2py
+  Shell sh28,sh29,sh30;
+  string fname_10=argv[10];
+  ReadShellparameter(sh28,sh29,sh30,fname_10);
+  Shell shell_arr_10[3]={sh28,sh29,sh30};
+
+  //C1-2pz
+  Shell sh31,sh32,sh33;
+  string fname_11=argv[11];
+  ReadShellparameter(sh31,sh32,sh33,fname_11);
+  Shell shell_arr_11[3]={sh31,sh32,sh33};
+
+
+  //C2-2px
+  Shell sh34,sh35,sh36;
+  string fname_12=argv[12];
+  ReadShellparameter(sh34,sh35,sh36,fname_12);
+  Shell shell_arr_12[3]={sh34,sh35,sh36};
+
+  //C2-2py
+  Shell sh37,sh38,sh39;
+  string fname_13=argv[13];
+  ReadShellparameter(sh37,sh38,sh39,fname_13);
+  Shell shell_arr_13[3]={sh37,sh38,sh39};
+
+
+  //C2-2pz
+  Shell sh40,sh41,sh42;
+  string fname_14=argv[14];
+  ReadShellparameter(sh40,sh41,sh42,fname_14);
+  Shell shell_arr_14[3]={sh40,sh41,sh42};
+
+
+
+  Shell* arr1[14]={shell_arr_1,shell_arr_2,shell_arr_3,shell_arr_4,shell_arr_5,shell_arr_6,shell_arr_7,shell_arr_8,shell_arr_9,shell_arr_10,shell_arr_11,shell_arr_12,shell_arr_13,shell_arr_14};
+  arma::mat overlap_2(14,14,arma::fill::zeros);
   create_ov_mat_2(overlap_2,arr1);
   overlap_2.print();
   cout << "\n\n";
@@ -673,27 +741,29 @@ int main(int argc, char* argv[])
   cout << "\n\n";
 
   // hmunu
-  arma::mat hmat(2,2,arma::fill::zeros);
+  arma::mat hmat(14,14,arma::fill::zeros);
   create_hmunu2(hmat,OV_mat,arr1);
   hmat.print();
   arma::mat H_mat=hmat;
   cout << "\n\n";
 
 
-  double Energy=Solve_EH(H_mat,2,arr1);
+  Shell* arr2[8]={shell_arr_1,shell_arr_2,shell_arr_3,shell_arr_4,shell_arr_5,shell_arr_6,shell_arr_7,shell_arr_8};
+
+  double Energy=Solve_EH(H_mat,8,arr2);
   cout << "Total energy : ";
   cout << Energy;
   cout << "\n\n";
   
   double total_eng=Energy;
 
-  double isolated_atom_eng=eng_iso_atoms(2,arr1);
+  double isolated_atom_eng=eng_iso_atoms(8,arr2);
 
   cout << "isolated energy atoms sum: ";
   cout << isolated_atom_eng;
   cout << "\n\n";
 
-  double heat_of_form_sum=heat_form(2,arr1);
+  double heat_of_form_sum=heat_form(8,arr2);
 
   cout << "sum heat of formations for each atom: ";
   cout << heat_of_form_sum;
